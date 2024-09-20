@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-pragma solidity >=0.8.20;
+pragma solidity >=0.8.24;
 
 interface IHatsIdUtilities {
     function buildHatId(uint256 _admin, uint16 _newHat) external pure returns (uint256 id);

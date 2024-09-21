@@ -33,7 +33,6 @@ import {IHats} from "./interfaces/Hats/IHats.sol";
 ///         are set by the recipient and the pool manager can accept or reject the milestone. The pool manager
 ///         can also reject the recipient.
 contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
-
     /// ================================
     /// ========== Storage =============
     /// ================================
@@ -66,39 +65,39 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
 
     /// @notice Struct to hold the initialization parameters for the strategy.
     struct InitializeData {
-        uint256 supplierHat;          // ID of the Supplier Hat.
-        uint256 executorHat;          // ID of the Executor Hat.
+        uint256 supplierHat; // ID of the Supplier Hat.
+        uint256 executorHat; // ID of the Executor Hat.
         SupplierPower[] projectSuppliers; // Array of SupplierPower, representing the power of each supplier.
-        address hatsContractAddress;  // Address of the Hats contract.
+        address hatsContractAddress; // Address of the Hats contract.
         uint8 thresholdPercentage;
     }
 
     /// @notice Struct to represent the offered milestones along with their voting status.
     struct OfferedMilestones {
-        Milestone[] milestones;       // Array of Milestones that are offered.
-        uint256 votesFor;             // Total number of votes in favor of the offered milestones.
-        uint256 votesAgainst;         // Total number of votes against the offered milestones.
+        Milestone[] milestones; // Array of Milestones that are offered.
+        uint256 votesFor; // Total number of votes in favor of the offered milestones.
+        uint256 votesAgainst; // Total number of votes against the offered milestones.
         mapping(address => uint256) suppliersVotes; // Mapping of supplier addresses to their vote counts.
     }
 
     /// @notice Struct to represent a submitted milestone and its voting status.
     struct SubmiteddMilestone {
-        uint256 votesFor;             // Total number of votes in favor of the submitted milestone.
-        uint256 votesAgainst;         // Total number of votes against the submitted milestone.
+        uint256 votesFor; // Total number of votes in favor of the submitted milestone.
+        uint256 votesAgainst; // Total number of votes against the submitted milestone.
         mapping(address => uint256) suppliersVotes; // Mapping of supplier addresses to their vote counts.
     }
 
     /// @notice Struct to represent the voting status for rejecting a project.
     struct RejectProject {
-        uint256 votesFor;             // Total number of votes in favor of rejecting the project.
-        uint256 votesAgainst;         // Total number of votes against rejecting the project.
+        uint256 votesFor; // Total number of votes in favor of rejecting the project.
+        uint256 votesAgainst; // Total number of votes against rejecting the project.
         mapping(address => uint256) suppliersVotes; // Mapping of supplier addresses to their vote counts.
     }
 
     /// @notice Struct to represent the power of a supplier.
     struct SupplierPower {
-        address supplierId;           // Address of the supplier.
-        uint256 supplierPowerr;       // Power value associated with the supplier.
+        address supplierId; // Address of the supplier.
+        uint256 supplierPowerr; // Power value associated with the supplier.
     }
 
     /// ===============================
@@ -137,7 +136,6 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
 
     /// @notice Thrown when strategy is not yet finished.
     error STRATEGY_IS_STILL_ACIVE();
-
 
     /// ===============================
     /// ========== Events =============
@@ -178,7 +176,6 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
 
     /// @notice Emitted when tokens of thanks was Sent.
     event TokenOfThanksSent(address supplier, uint256 amount);
-
 
     /// ================================
     /// ========== Storage =============
@@ -238,7 +235,6 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
     /// @notice Mapping of milestone IDs to their submitted milestone details.
     mapping(uint256 => SubmiteddMilestone) public submittedvMilestones;
 
-
     /// ===============================
     /// ======== Constructor ==========
     /// ===============================
@@ -276,21 +272,20 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
         thresholdPercentage = _initData.thresholdPercentage;
         hatsContract = IHats(_initData.hatsContractAddress);
 
-        SupplierPower[] memory supliersPower =  _initData.projectSuppliers;
+        SupplierPower[] memory supliersPower = _initData.projectSuppliers;
 
         uint256 totalInvestment = 0;
-        for (uint i = 0; i < supliersPower.length; i++) {
+        for (uint256 i = 0; i < supliersPower.length; i++) {
             totalInvestment += supliersPower[i].supplierPowerr;
         }
 
-        for (uint i = 0; i < supliersPower.length; i++) {
+        for (uint256 i = 0; i < supliersPower.length; i++) {
             _suppliersStore.push(supliersPower[i].supplierId);
 
             // Normalize supplier power to a percentage
             _suplierPower[supliersPower[i].supplierId] = (supliersPower[i].supplierPowerr * 1e18) / totalInvestment;
             totalSupply += _suplierPower[supliersPower[i].supplierId];
         }
-
 
         _registry = allo.getRegistry();
 
@@ -345,7 +340,11 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
     /// @param _recipientId ID of the recipient
     /// @param _supplier Address of the supplier
     /// @return uint256 Vote count of the supplier on the offered milestones
-    function getSupplierOfferedMilestonesVote(address _recipientId, address _supplier) external view returns (uint256) {
+    function getSupplierOfferedMilestonesVote(address _recipientId, address _supplier)
+        external
+        view
+        returns (uint256)
+    {
         return offeredMilestones[_recipientId].suppliersVotes[_supplier];
     }
 
@@ -367,7 +366,11 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
     /// @param _milestoneId ID of the milestone
     /// @param _supplier Address of the supplier
     /// @return uint256 Vote count of the supplier on the submitted milestone
-    function getSupplierSubmittedMilestonesVote(uint256 _milestoneId, address _supplier) external view returns (uint256) {
+    function getSupplierSubmittedMilestonesVote(uint256 _milestoneId, address _supplier)
+        external
+        view
+        returns (uint256)
+    {
         return submittedvMilestones[_milestoneId].suppliersVotes[_supplier];
     }
 
@@ -390,7 +393,7 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
         return projectReject.votesAgainst;
     }
 
-   /// @notice Retrieves the number of votes cast by the calling supplier regarding the rejection of the project.
+    /// @notice Retrieves the number of votes cast by the calling supplier regarding the rejection of the project.
     /// @dev This function returns the vote count specific to the supplier who calls it, identified by msg.sender.
     /// @return uint256 The number of votes cast by the calling supplier on the project rejection proposal.
     function getRejectProjectSupplierVotes() external view returns (uint256) {
@@ -437,7 +440,7 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
 
         _resetOfferedMilestones(_recipientId);
 
-        for (uint i = 0; i < _milestones.length; i++) {
+        for (uint256 i = 0; i < _milestones.length; i++) {
             offeredMilestones[_recipientId].milestones.push(_milestones[i]);
         }
 
@@ -501,7 +504,7 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
         if (!hatsContract.isWearerOfHat(msg.sender, executorHat)) {
             revert EXECUTOR_HAT_WEARING_REQUIRED();
         }
-        
+
         // Ensure that the sender is the recipient of the milestone
         if (_recipientId != msg.sender) {
             revert UNAUTHORIZED();
@@ -528,7 +531,7 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
             revert MILESTONE_ALREADY_ACCEPTED();
         }
 
-        for (uint i = 0; i < _suppliersStore.length; i++) {
+        for (uint256 i = 0; i < _suppliersStore.length; i++) {
             submittedvMilestones[_milestoneId].suppliersVotes[_suppliersStore[i]] = 0;
         }
         delete submittedvMilestones[_milestoneId];
@@ -541,7 +544,6 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
         emit MilestoneSubmitted(_recipientId, _milestoneId, _metadata);
     }
 
-
     /// @notice Reviews a submitted milestone for a specific recipient and updates its status.
     /// @dev Requires the sender to be the pool manager and wearing the supplier hat.
     ///      The recipient must be in an 'Accepted' status, and the milestone must be in a 'Pending' status.
@@ -550,7 +552,10 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
     /// @param _recipientId ID of the recipient whose milestone is being reviewed.
     /// @param _milestoneId ID of the milestone being reviewed.
     /// @param _status New status to be set for the milestone (Accepted or Rejected).
-    function reviewSubmitedMilestone(address _recipientId, uint256 _milestoneId, Status _status) external onlyPoolManager(msg.sender) {
+    function reviewSubmitedMilestone(address _recipientId, uint256 _milestoneId, Status _status)
+        external
+        onlyPoolManager(msg.sender)
+    {
         if (!hatsContract.isWearerOfHat(msg.sender, supplierHat)) {
             revert SUPPLIER_HAT_WEARING_REQUIRED();
         }
@@ -585,7 +590,7 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
         if (_status == Status.Accepted) {
             submittedvMilestones[_milestoneId].votesFor += managerVotingPower;
 
-            if (submittedvMilestones[_milestoneId].votesFor > threshold) { 
+            if (submittedvMilestones[_milestoneId].votesFor > threshold) {
                 milestone.milestoneStatus = _status;
                 address[] memory recipientIds = new address[](1);
                 recipientIds[0] = _recipientId;
@@ -595,9 +600,9 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
         } else if (_status == Status.Rejected) {
             submittedvMilestones[_milestoneId].votesAgainst += managerVotingPower;
 
-            if (submittedvMilestones[_milestoneId].votesAgainst > threshold) { 
+            if (submittedvMilestones[_milestoneId].votesAgainst > threshold) {
                 milestone.milestoneStatus = _status;
-                for (uint i = 0; i < _suppliersStore.length; i++) {
+                for (uint256 i = 0; i < _suppliersStore.length; i++) {
                     submittedvMilestones[_milestoneId].suppliersVotes[_suppliersStore[i]] = 0;
                 }
                 delete submittedvMilestones[_milestoneId];
@@ -608,14 +613,13 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
         emit SubmittedvMilestoneReviewed(_recipientId, _milestoneId, _status);
     }
 
-
     /// @notice Reviews and potentially rejects the project based on the supplied status.
     /// @dev Requires the sender to be the pool manager and wearing the supplier hat.
     ///      The function updates the project's status based on the majority vote.
     ///      If the project is rejected, it deactivates the pool and returns funds to suppliers.
     ///      Emits a `ProjectRejected` event if the project is rejected, or a `ProjectRejectDeclined` event if the rejection is declined.
     /// @param _status The proposed status for the project (either Accepted or Rejected).
-    function rejectProject(Status _status) external onlyPoolManager(msg.sender) { 
+    function rejectProject(Status _status) external onlyPoolManager(msg.sender) {
         if (!hatsContract.isWearerOfHat(msg.sender, supplierHat)) {
             revert SUPPLIER_HAT_WEARING_REQUIRED();
         }
@@ -635,8 +639,7 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
         if (_status == Status.Accepted) {
             projectReject.votesFor += managerVotingPower;
 
-            if (projectReject.votesFor > threshold) { 
- 
+            if (projectReject.votesFor > threshold) {
                 _distributeFundsBackToSuppliers();
 
                 state = StrategyState.Rejected;
@@ -647,8 +650,8 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
         } else if (_status == Status.Rejected) {
             projectReject.votesAgainst += managerVotingPower;
 
-            if (projectReject.votesAgainst > threshold) { 
-                for (uint i = 0; i < _suppliersStore.length; i++) {
+            if (projectReject.votesAgainst > threshold) {
+                for (uint256 i = 0; i < _suppliersStore.length; i++) {
                     projectReject.suppliersVotes[_suppliersStore[i]] = 0;
                 }
                 delete projectReject;
@@ -664,12 +667,12 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
     ///      Emits a `TokenOfThanksSent` event for each supplier receiving the token.
     ///      Requires the transaction to be non-reentrant to prevent potential security vulnerabilities.
     /// @param _amount The total amount of tokens to be distributed to the suppliers.
-    function sendTokenOfThanksToSuppliers(uint256 _amount) external payable nonReentrant { 
+    function sendTokenOfThanksToSuppliers(uint256 _amount) external payable nonReentrant {
         if (_amount == 0 || _amount != msg.value) revert NOT_ENOUGH_FUNDS();
 
         if (state != StrategyState.Executed && state != StrategyState.Rejected) revert STRATEGY_IS_STILL_ACIVE();
 
-        for (uint i = 0; i < _suppliersStore.length; i++) {
+        for (uint256 i = 0; i < _suppliersStore.length; i++) {
             uint256 percentage = _suplierPower[_suppliersStore[i]];
             uint256 amount = _amount * percentage / 1e18;
             _transferAmount(NATIVE, _suppliersStore[i], amount);
@@ -677,8 +680,6 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
             emit TokenOfThanksSent(_suppliersStore[i], amount);
         }
     }
-
-
 
     /// ====================================
     /// ============ Internal ==============
@@ -696,8 +697,8 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
     /// @notice Distributes funds back to suppliers based on their contribution percentage.
     /// @dev Iterates through all suppliers and transfers their share of the pool amount back to them.
     ///      This function is private and is called when a project is rejected.
-    function _distributeFundsBackToSuppliers() private { 
-        for (uint i = 0; i < _suppliersStore.length; i++) {
+    function _distributeFundsBackToSuppliers() private {
+        for (uint256 i = 0; i < _suppliersStore.length; i++) {
             uint256 percentage = _suplierPower[_suppliersStore[i]];
             uint256 amount = poolAmount * percentage / 1e18;
             IAllo.Pool memory pool = allo.getPool(poolId);
@@ -720,12 +721,11 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
     ///      This function is internal and is used when milestones need to be reset.
     /// @param _recipientId The address ID of the recipient whose milestones are to be reset.
     function _resetOfferedMilestones(address _recipientId) internal {
-        for (uint i = 0; i < _suppliersStore.length; i++) {
+        for (uint256 i = 0; i < _suppliersStore.length; i++) {
             offeredMilestones[_recipientId].suppliersVotes[_suppliersStore[i]] = 0;
         }
         delete offeredMilestones[_recipientId];
     }
-
 
     /// @notice Register a recipient to the pool.
     /// @dev Emits a 'Registered()' event
@@ -786,14 +786,9 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
     /// @param _data The data to be decoded
     /// @custom:data (address recipientId, Status recipientStatus, uint256 grantAmount)
     /// @param _sender The sender of the allocation
-    function _allocate(bytes memory _data, address _sender)
-        internal
-        virtual
-        override
-        nonReentrant
-    {
+    function _allocate(bytes memory _data, address _sender) internal virtual override nonReentrant {
         require(_sender == address(this), "UNAUTHORIZED allocate");
-        
+
         // Decode the '_data'.
         (address recipientId, Status recipientStatus, uint256 grantAmount) =
             abi.decode(_data, (address, Status, uint256));
@@ -836,11 +831,7 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
     /// @dev '_sender' must be this strategy to distribute.
     /// @param _recipientIds The recipient ids of the distribution
     /// @param _sender The sender of the distribution
-    function _distribute(address[] memory _recipientIds, bytes memory, address _sender)
-        internal
-        virtual
-        override
-    {
+    function _distribute(address[] memory _recipientIds, bytes memory, address _sender) internal virtual override {
         require(_sender == address(this), "UNAUTHORIZED distribute");
 
         uint256 recipientLength = _recipientIds.length;
@@ -912,7 +903,6 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
     /// @notice Get the payout summary for the accepted recipient.
     /// @return Returns the payout summary for the accepted recipient
 
-    
     function _getPayout(address _recipientId, bytes memory) internal view override returns (PayoutSummary memory) {
         Recipient memory recipient = _getRecipient(_recipientId);
         return PayoutSummary(recipient.recipientAddress, recipient.grantAmount);
@@ -956,11 +946,7 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
             revert INVALID_MILESTONES_PERCENTAGE();
         }
 
-        bytes memory encodedAllocateParams = abi.encode(
-            _recipientId,
-            Status.Accepted,
-            totalSupply
-        );
+        bytes memory encodedAllocateParams = abi.encode(_recipientId, Status.Accepted, totalSupply);
 
         allo.allocate(poolId, encodedAllocateParams);
 

@@ -15,28 +15,29 @@ import "../../lib/openzeppelin-contracts-upgradeable/contracts/utils/ReentrancyG
 contract Manager is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeable {
     /// @notice Enum representing various statuses a project or milestone can have.
     enum Status {
-        None,       // Default state, indicating no status.
-        Pending,    // Indicates awaiting a decision or action.
-        Accepted,   // Indicates approval or acceptance.
-        Rejected,   // Indicates disapproval or rejection.
-        Appealed,   // Indicates an appeal to a decision.
-        InReview,   // Indicates currently under review.
-        Canceled    // Indicates cancellation.
+        None, // Default state, indicating no status.
+        Pending, // Indicates awaiting a decision or action.
+        Accepted, // Indicates approval or acceptance.
+        Rejected, // Indicates disapproval or rejection.
+        Appealed, // Indicates an appeal to a decision.
+        InReview, // Indicates currently under review.
+        Canceled // Indicates cancellation.
+
     }
 
     /// @notice Struct to hold initialization data for setting up a project or strategy.
     struct InitializeData {
-        uint256 supplierHat;          // ID of the Supplier Hat.
-        uint256 executorHat;          // ID of the Executor Hat.
+        uint256 supplierHat; // ID of the Supplier Hat.
+        uint256 executorHat; // ID of the Executor Hat.
         SupplierPower[] supliersPower; // Array of SupplierPower, representing the power of each supplier.
-        address hatsContractAddress;  // Address of the Hats contract.
+        address hatsContractAddress; // Address of the Hats contract.
         uint8 thresholdPercentage;
     }
 
     /// @notice Struct representing the supply details of a project.
     struct ProjectSupply {
-        uint256 need;                 // The total amount needed for the project.
-        uint256 has;                  // The amount currently supplied.         // Description of the project.
+        uint256 need; // The total amount needed for the project.
+        uint256 has; // The amount currently supplied.         // Description of the project.
     }
 
     /// @notice Struct for mapping suppliers to their supply amount by ID.
@@ -46,14 +47,14 @@ contract Manager is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeabl
 
     /// @notice Struct representing the power or influence of a supplier.
     struct SupplierPower {
-        address supplierId;           // Address of the supplier.
-        uint256 supplierPowerr;       // Power value associated with the supplier.
+        address supplierId; // Address of the supplier.
+        uint256 supplierPowerr; // Power value associated with the supplier.
     }
 
     /// @notice Struct holding IDs for different types of hats used in the system.
     struct Hats {
-        uint256 executorHat;          // ID of the Executor Hat.
-        uint256 supplierHat;          // ID of the Supplier Hat.
+        uint256 executorHat; // ID of the Executor Hat.
+        uint256 supplierHat; // ID of the Supplier Hat.
     }
 
     /// ===============================
@@ -128,7 +129,6 @@ contract Manager is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeabl
 
     bool private initialized;
 
-
     /// ===============================
     /// ========== Events =============
     /// ===============================
@@ -148,10 +148,10 @@ contract Manager is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeabl
     event ProjectNeedsUpdated(bytes32 indexed projectId, uint256 newNeeds);
 
     function initialize(
-        address _alloAddress, 
-        address _strategy, 
-        address _strategyFactory, 
-        address _hatsContractAddress, 
+        address _alloAddress,
+        address _strategy,
+        address _strategyFactory,
+        address _hatsContractAddress,
         uint256 _managerHatID
     ) public initializer {
         require(!initialized, "Contract instance has already been initialized");
@@ -170,7 +170,6 @@ contract Manager is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeabl
         registry = IRegistry(registryAddress);
         thresholdPercentage = 70; // Default value, adjust as needed
     }
-
 
     /// @notice Retrieves the profile of a project from the registry.
     /// @param _projectId The ID of the project.
@@ -219,7 +218,7 @@ contract Manager is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeabl
      * @notice Retrieves the supply details of a specific project.
      * @param _projectId The ID of the project for which to get the supply details.
      * @return ProjectSupply A struct containing the project's supply details, including total need and amount supplied.
-    */
+     */
     function getProjectSupply(bytes32 _projectId) public view returns (ProjectSupply memory) {
         return projectSupply[_projectId];
     }
@@ -263,7 +262,7 @@ contract Manager is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeabl
     /// @notice Sets the threshold percentage for a specific profile.
     /// @param _newPercentage The new threshold percentage to be set.
     /// @dev Requires the sender to be the owner of the profile and the percentage to be between 1 and 100.
-    function setThresholdPercentage(uint8 _newPercentage)  external onlyOwner {
+    function setThresholdPercentage(uint8 _newPercentage) external onlyOwner {
         require(_newPercentage > 0, "Percentage must be greater than zero");
         require(_newPercentage <= 100, "Invalid percentage");
         thresholdPercentage = _newPercentage;
@@ -296,16 +295,15 @@ contract Manager is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeabl
         emit ProjectRegistered(profileId, _nonce);
     }
 
-
     /// @notice Retrieves all registered project profiles.
     /// @return bytes32[] An array of project profile IDs.
-    function getProfiles() public view returns (bytes32[] memory){
+    function getProfiles() public view returns (bytes32[] memory) {
         return profiles;
     }
 
     /**
      * @notice Updates the funding requirements ('needs') for a specific project.
-     * @dev Requires that the caller is the project executor, the new needs value is greater than the current supply to ensure 
+     * @dev Requires that the caller is the project executor, the new needs value is greater than the current supply to ensure
      *      project requirements are realistic, and that the new needs value accounts for necessary fees.
      *      This function is intended to adjust the project's funding target based on revised estimates or project scope changes.
      * @param _projectId The ID of the project for which to update funding requirements.
@@ -315,7 +313,7 @@ contract Manager is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeabl
         require(projectExecutor[_projectId] == msg.sender, "UNAUTHORIZED: Caller must be project executor.");
         require(_needs > projectSupply[_projectId].has, "INVALID VALUE: Needs must exceed current supply.");
         require(_needs > allo.getPercentFee(), "LESS THAN FEE: Needs must be greater than the fee.");
-        
+
         projectSupply[_projectId].need = _needs;
 
         emit ProjectNeedsUpdated(_projectId, _needs);
@@ -323,16 +321,15 @@ contract Manager is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeabl
 
     /**
      * @notice Supplies funds to a specific project.
-     * @dev This function requires that the project exists and is not fully funded. 
-     *      The supplied amount must be non-zero and equal to the sent value. If the supplied amount meets or exceeds 
-     *      the project's need, it triggers the creation of supplier and executor hats, and initializes a new pool 
+     * @dev This function requires that the project exists and is not fully funded.
+     *      The supplied amount must be non-zero and equal to the sent value. If the supplied amount meets or exceeds
+     *      the project's need, it triggers the creation of supplier and executor hats, and initializes a new pool
      *      with a custom strategy. Emits a ProjectFunded event and, if funding is complete, a ProjectPoolCreeated event.
      * @param _projectId The ID of the project to supply funds to.
      * @param _amount The amount of funds to supply.
-    */
+     */
     function supplyProject(bytes32 _projectId, uint256 _amount) external payable nonReentrant {
-
-        if ((projectSupply[_projectId].has + _amount) > projectSupply[_projectId].need){
+        if ((projectSupply[_projectId].has + _amount) > projectSupply[_projectId].need) {
             revert AMOUNT_IS_BIGGER_THAN_DECLARED_NEEDEDS();
         }
         require(_projectExists(_projectId), "Project does not exist");
@@ -345,7 +342,7 @@ contract Manager is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeabl
 
         projectSupply[_projectId].has += _amount;
 
-        if (projectSuppliersById[_projectId].supplyById[msg.sender] == 0){
+        if (projectSuppliersById[_projectId].supplyById[msg.sender] == 0) {
             projectSuppliers[_projectId].push(msg.sender);
         }
 
@@ -353,20 +350,19 @@ contract Manager is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeabl
 
         emit ProjectFunded(_projectId, _amount);
 
-        if (projectSupply[_projectId].has >= projectSupply[_projectId].need){
-
+        if (projectSupply[_projectId].has >= projectSupply[_projectId].need) {
             SupplierPower[] memory suppliers = _extractSupliers(_projectId);
             address[] memory managers = new address[](suppliers.length + 1);
 
-            for (uint i = 0; i < suppliers.length; i++) {
+            for (uint256 i = 0; i < suppliers.length; i++) {
                 managers[i] = (suppliers[i].supplierId);
             }
 
             managers[suppliers.length] = address(this);
 
             _createAndMintHat(
-                "Manager", 
-                managers, 
+                "Manager",
+                managers,
                 "ipfs://bafkreiey2a5jtqvjl4ehk3jx7fh7edsjqmql6vqxdh47znsleetug44umy/",
                 _projectId,
                 true
@@ -376,20 +372,22 @@ contract Manager is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeabl
             executorAddresses[0] = projectExecutor[_projectId];
 
             _createAndMintHat(
-                "Recipient", 
-                executorAddresses, 
+                "Recipient",
+                executorAddresses,
                 "ipfs://bafkreih7hjg4ehf4lqdoqstlkjxvjy7zfnza4keh2knohsle3ikjja3g2i/",
                 _projectId,
                 false
             );
 
-            bytes memory encodedInitData = abi.encode(InitializeData({
-                supplierHat: projectHats[_projectId].supplierHat,
-                executorHat: projectHats[_projectId].executorHat,
-                supliersPower: suppliers,
-                hatsContractAddress: hatsContractAddress,
-                thresholdPercentage: thresholdPercentage
-            }));
+            bytes memory encodedInitData = abi.encode(
+                InitializeData({
+                    supplierHat: projectHats[_projectId].supplierHat,
+                    executorHat: projectHats[_projectId].executorHat,
+                    supliersPower: suppliers,
+                    hatsContractAddress: hatsContractAddress,
+                    thresholdPercentage: thresholdPercentage
+                })
+            );
 
             projectStrategy[_projectId] = strategyFactory.createStrategy(strategy);
 
@@ -414,16 +412,13 @@ contract Manager is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeabl
                 projectExecutor[_projectId],
                 0x0000000000000000000000000000000000000000,
                 projectSupply[_projectId].need,
-                Metadata({
-                    protocol: 1,
-                    pointer: "executor"
-                })
+                Metadata({protocol: 1, pointer: "executor"})
             );
 
             allo.registerRecipient(pool, encodedRecipientParams);
             projectPool[_projectId] = pool;
 
-            emit ProjectPoolCreeated( _projectId, pool);
+            emit ProjectPoolCreeated(_projectId, pool);
         }
     }
 
@@ -433,10 +428,10 @@ contract Manager is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeabl
      *      The function updates the project's supply details and removes the sender from the list of suppliers.
      *      It also refunds the contributed amount to the sender.
      * @param _projectId The ID of the project from which to revoke the supply.
-    */
+     */
     function revokeProjectSupply(bytes32 _projectId) external nonReentrant {
         require(_projectExists(_projectId), "Project does not exist");
-        
+
         if (projectPool[_projectId] != 0) revert PROJECT_IS_FUNDED();
 
         uint256 amount = projectSuppliersById[_projectId].supplyById[msg.sender];
@@ -447,9 +442,9 @@ contract Manager is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeabl
         projectSupply[_projectId].has -= amount;
 
         address[] memory updatedSuppliers = new address[](projectSuppliers[_projectId].length - 1);
-        uint j = 0;
+        uint256 j = 0;
 
-        for (uint i = 0; i < projectSuppliers[_projectId].length; i++) {
+        for (uint256 i = 0; i < projectSuppliers[_projectId].length; i++) {
             if (projectSuppliers[_projectId][i] != msg.sender) {
                 updatedSuppliers[j] = projectSuppliers[_projectId][i];
                 j++;
@@ -466,13 +461,11 @@ contract Manager is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeabl
      * @dev Iterates through the list of suppliers for the project and compiles their power into an array.
      * @param _projectId The ID of the project for which to extract supplier powers.
      * @return SupplierPower[] An array of SupplierPower structs, each representing a supplier's power for the project.
-    */
+     */
     function _extractSupliers(bytes32 _projectId) internal view returns (SupplierPower[] memory) {
-
         SupplierPower[] memory suppliersPower = new SupplierPower[](projectSuppliers[_projectId].length);
 
-        for (uint i = 0; i < projectSuppliers[_projectId].length; i++) {
-            
+        for (uint256 i = 0; i < projectSuppliers[_projectId].length; i++) {
             address supplierId = projectSuppliers[_projectId][i];
             uint256 supplierPower = projectSuppliersById[_projectId].supplyById[supplierId];
 
@@ -487,7 +480,7 @@ contract Manager is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeabl
      * @dev A project exists if its profile has an owner address that is not the zero address.
      * @param _profileId The profile ID of the project to check.
      * @return bool Returns 'true' if the project exists, 'false' otherwise.
-    */
+     */
     function _projectExists(bytes32 _profileId) private view returns (bool) {
         IRegistry.Profile memory profile = registry.getProfileById(_profileId);
         return profile.owner != address(0);
@@ -501,34 +494,25 @@ contract Manager is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeabl
      * @param _imageURI The URI of the hat's image.
      * @param _projectId The ID of the project associated with the hat.
      * @param _isSupplier A boolean indicating if the hat is for suppliers (true) or executors (false).
-    */
+     */
     function _createAndMintHat(
-        string memory _hatName, 
-        address[] memory _hatWearers, 
-        string memory _imageURI, 
-        bytes32 _projectId, 
+        string memory _hatName,
+        address[] memory _hatWearers,
+        string memory _imageURI,
+        bytes32 _projectId,
         bool _isSupplier
-    ) 
-        private 
-    {
+    ) private {
         uint256 hat = hatsContract.createHat(
-            managerHatID, 
-            _hatName, 
-            uint32(_hatWearers.length), 
-            address(this), 
-            address(this), 
-            true, 
-            _imageURI
+            managerHatID, _hatName, uint32(_hatWearers.length), address(this), address(this), true, _imageURI
         );
 
-        for (uint i = 0; i < _hatWearers.length; i++){
+        for (uint256 i = 0; i < _hatWearers.length; i++) {
             hatsContract.mintHat(hat, _hatWearers[i]);
         }
 
-        if (_isSupplier){
+        if (_isSupplier) {
             projectHats[_projectId].supplierHat = hat;
-        }
-        else {
+        } else {
             projectHats[_projectId].executorHat = hat;
         }
     }
@@ -546,7 +530,7 @@ contract Manager is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeabl
     }
 
     // function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
-    
+
     /// @notice This contract should be able to receive native token
     receive() external payable {}
 }

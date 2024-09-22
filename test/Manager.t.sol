@@ -17,13 +17,16 @@ contract ManagerTest is Test {
         manager = new Manager();
 
         manager.initialize(
-            0x1133eA7Af70876e64665ecD07C0A0476d09465a1, strategy, strategyFactory, hatsContractAddress, managerHatID
+            0x1133eA7Af70876e64665ecD07C0A0476d09465a1, 
+            strategy, 
+            strategyFactory, 
+            hatsContractAddress, 
+            managerHatID
         );
     }
 
     function test_GetManagerNative() public view {
         address native = manager.NATIVE();
-
         console.log(":::::: Manager Native:", native);
     }
 }

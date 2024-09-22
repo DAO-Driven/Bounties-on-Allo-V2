@@ -57,6 +57,17 @@ contract Manager is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeabl
         uint256 supplierHat; // ID of the Supplier Hat.
     }
 
+    struct ProjectInformation {
+        address token;
+        address projectExecutor;
+        address[] projectSuppliers;
+        SuppliersById projectSuppliersById;
+        ProjectSupply projectSupply;
+        uint256 projectPool;
+        address projectStrategy;
+        Hats projectHats;
+    }
+
     /// ===============================
     /// ========== Errors =============
     /// ===============================
@@ -105,6 +116,7 @@ contract Manager is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeabl
 
     /// @notice Array storing the profiles of projects.
     bytes32[] profiles;
+    mapping (bytes32 => ProjectInformation) projects;
 
     /// @notice Mapping from project ID to an array of supplier addresses for each project.
     mapping(bytes32 => address[]) projectSuppliers;
@@ -275,7 +287,8 @@ contract Manager is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeabl
     /// @param _name The name of the project.
     /// @param _metadata Metadata associated with the project.
     /// @param _recipient The address of the project's recipient or executor.
-    function registerProject(
+    function registerProjectWithoutPool(
+        address _token,
         uint256 _needs,
         uint256 _nonce,
         string memory _name,
@@ -287,8 +300,13 @@ contract Manager is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeabl
         members[1] = address(this);
 
         bytes32 profileId = registry.createProfile(_nonce, _name, _metadata, address(this), members);
-        projectSupply[profileId].need += allo.getPercentFee() + _needs;
-        projectExecutor[profileId] = _recipient;
+
+        projects[profileId].token = _token;
+        projects[profileId].projectExecutor = _recipient;
+        projects[profileId].projectSupply.need = allo.getPercentFee() + _needs;
+        
+        // projectSupply[profileId].need += allo.getPercentFee() + _needs;
+        // projectExecutor[profileId] = _recipient;
 
         profiles.push(profileId);
 

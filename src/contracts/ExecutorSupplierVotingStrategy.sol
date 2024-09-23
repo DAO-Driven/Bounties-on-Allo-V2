@@ -13,6 +13,7 @@ import {BaseStrategy} from "./BaseStrategy.sol";
 import {Metadata} from "./libraries/Metadata.sol";
 import {IHats} from "./interfaces/Hats/IHats.sol";
 
+
 // ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣾⣿⣷⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣼⣿⣿⣷⣄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢸⣿⣿⣿⣗⠀⠀⠀⢸⣿⣿⣿⡯⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
 // ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣿⣿⣿⣿⣷⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣼⣿⣿⣿⣿⣿⡄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢸⣿⣿⣿⣗⠀⠀⠀⢸⣿⣿⣿⡯⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
 // ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢸⣿⣿⣿⣿⣿⣿⡄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣸⣿⣿⣿⢿⣿⣿⣿⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢸⣿⣿⣿⣗⠀⠀⠀⢸⣿⣿⣿⡯⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
@@ -99,43 +100,6 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
         address supplierId; // Address of the supplier.
         uint256 supplierPowerr; // Power value associated with the supplier.
     }
-
-    /// ===============================
-    /// ========== Errors =============
-    /// ===============================
-
-    /// @notice Thrown when an invalid milestone is encountered.
-    error INVALID_MILESTONE();
-
-    /// @notice Thrown when the percentage for milestones is invalid.
-    error INVALID_MILESTONES_PERCENTAGE();
-
-    /// @notice Thrown when trying to accept a milestone that is already accepted.
-    error MILESTONE_ALREADY_ACCEPTED();
-
-    /// @notice Thrown when attempting to set milestones that have already been set.
-    error MILESTONES_ALREADY_SET();
-
-    /// @notice Error thrown when an operation is attempted on a milestone with an inappropriate status.
-    error INVALID_MILESTONE_STATUS();
-
-    /// @notice Thrown when a supplier has already reviewed the milestones.
-    error ALREADY_REVIEWED();
-
-    /// @notice Thrown when the allocation amount exceeds the available amount in the pool.
-    error ALLOCATION_EXCEEDS_POOL_AMOUNT();
-
-    /// @notice Thrown when an operation is attempted with an invalid status.
-    error INVALID_STATUS();
-
-    /// @notice Thrown when an action requires the executor hat but the executor is not wearing it.
-    error EXECUTOR_HAT_WEARING_REQUIRED();
-
-    /// @notice Thrown when an action requires the supplier hat but the supplier is not wearing it.
-    error SUPPLIER_HAT_WEARING_REQUIRED();
-
-    /// @notice Thrown when strategy is not yet finished.
-    error STRATEGY_IS_STILL_ACIVE();
 
     /// ===============================
     /// ========== Events =============

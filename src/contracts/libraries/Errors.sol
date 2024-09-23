@@ -116,4 +116,46 @@ contract Errors {
 
     /// @notice Thrown when the allocation is active.
     error ALLOCATION_ACTIVE();
+
+    /// @notice Reverts if the project is already fully funded and does not require additional supply.
+    error PROJECT_HAS_POOL();
+
+    /// @notice Reverts if the amount is greater than the project's declared needed amount.
+    error AMOUNT_IS_BIGGER_THAN_DECLARED_NEEDEDS();
+
+    /// @notice Reverts if an executor attempts to supply, which is not permitted.
+    error EXECUTOR_IS_NOT_ALLOWED_TO_SUPPLY();
+
+    /// @notice Thrown when an invalid milestone is encountered.
+    error INVALID_MILESTONE();
+
+    /// @notice Thrown when the percentage for milestones is invalid.
+    error INVALID_MILESTONES_PERCENTAGE();
+
+    /// @notice Thrown when trying to accept a milestone that is already accepted.
+    error MILESTONE_ALREADY_ACCEPTED();
+
+    /// @notice Thrown when attempting to set milestones that have already been set.
+    error MILESTONES_ALREADY_SET();
+
+    /// @notice Error thrown when an operation is attempted on a milestone with an inappropriate status.
+    error INVALID_MILESTONE_STATUS();
+
+    /// @notice Thrown when a supplier has already reviewed the milestones.
+    error ALREADY_REVIEWED();
+
+    /// @notice Thrown when the allocation amount exceeds the available amount in the pool.
+    error ALLOCATION_EXCEEDS_POOL_AMOUNT();
+
+    /// @notice Thrown when an operation is attempted with an invalid status.
+    error INVALID_STATUS();
+
+    /// @notice Thrown when an action requires the executor hat but the executor is not wearing it.
+    error EXECUTOR_HAT_WEARING_REQUIRED();
+
+    /// @notice Thrown when an action requires the supplier hat but the supplier is not wearing it.
+    error SUPPLIER_HAT_WEARING_REQUIRED();
+
+    /// @notice Thrown when strategy is not yet finished.
+    error STRATEGY_IS_STILL_ACIVE();
 }

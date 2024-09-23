@@ -35,7 +35,7 @@ contract ManagerTest is Test {
 
     function test_registerProjectWithoutPool() external {
 
-        manager.registerProjectWithoutPool(
+        manager.registerProject(
             address(projectToken),
             1e18,
             777777,
@@ -43,8 +43,7 @@ contract ManagerTest is Test {
             Metadata({
                 protocol: 1,
                 pointer: ""
-            }),
-            projectExecutor
+            })
         );
     }
 }

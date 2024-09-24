@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
+import "forge-std/Test.sol";
 import {IAllo} from "./interfaces/IAllo.sol";
 import {IStrategyFactory} from "./interfaces/IStrategyFactory.sol";
 import {IHats} from "./interfaces/Hats/IHats.sol";
@@ -55,24 +56,10 @@ contract Manager is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeabl
     mapping (bytes32 => ProjectInformation) projects;
 
 
-
     // TODO: delete all this since it is:  mapping (bytes32 => ProjectInformation) projects;
-
-
-    /// @notice Mapping from project ID to an array of supplier addresses for each project.
-    mapping(bytes32 => address[]) projectSuppliers;
-
-    /// @notice Mapping from project ID to a struct containing supplier IDs and their supply amounts.
-    mapping(bytes32 => SuppliersById) projectSuppliersById;
-
-    /// @notice Mapping from project ID to its supply details, including needs and current supply.
-    mapping(bytes32 => ProjectSupply) projectSupply;
 
     /// @notice Mapping from project ID to the address of its executor.
     mapping(bytes32 => address) projectExecutor;
-
-    /// @notice Mapping from project ID to its associated pool ID.
-    mapping(bytes32 => uint256) projectPool;
 
     /// @notice Mapping from project ID to the address of its strategy contract.
     mapping(bytes32 => address) projectStrategy;
@@ -135,14 +122,14 @@ contract Manager is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeabl
     /// @param _projectId The ID of the project.
     /// @return uint256 The pool ID of the specified project.
     function getProjectPool(bytes32 _projectId) public view returns (uint256) {
-        return projectPool[_projectId];
+        return projects[_projectId].projectPool;
     }
 
     /// @notice Retrieves a list of supplier addresses for a project.
     /// @param _projectId The ID of the project.
     /// @return address[] An array of addresses of the suppliers for the specified project.
     function getProjectSuppliers(bytes32 _projectId) public view returns (address[] memory) {
-        return projectSuppliers[_projectId];
+        return projects[_projectId].projectSuppliers;
     }
 
     /// @notice Retrieves the supply amount provided by a specific supplier for a project.
@@ -150,7 +137,7 @@ contract Manager is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeabl
     /// @param _supplier The address of the supplier.
     /// @return uint256 The amount supplied by the specified supplier for the project.
     function getProjectSupplierById(bytes32 _projectId, address _supplier) public view returns (uint256) {
-        return projectSuppliersById[_projectId].supplyById[_supplier];
+        return projects[_projectId].projectSuppliersById.supplyById[_supplier];
     }
 
     /// @notice Retrieves the executor address for a project.
@@ -173,7 +160,7 @@ contract Manager is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeabl
      * @return ProjectSupply A struct containing the project's supply details, including total need and amount supplied.
      */
     function getProjectSupply(bytes32 _projectId) public view returns (ProjectSupply memory) {
-        return projectSupply[_projectId];
+        return projects[_projectId].projectSupply;
     }
 
     /// @notice Sets a new Allo contract address
@@ -234,7 +221,7 @@ contract Manager is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeabl
         uint256 _nonce,
         string memory _name,
         Metadata memory _metadata
-    ) external {
+    ) external returns (bytes32){
         address[] memory members = new address[](2);
         members[0] = msg.sender;
         members[1] = address(this);
@@ -249,6 +236,8 @@ contract Manager is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeabl
         // projectExecutor[profileId] = _recipient;
 
         emit ProjectRegistered(profileId, _nonce);
+
+        return profileId;
     }
 
     // /**
@@ -279,28 +268,34 @@ contract Manager is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeabl
      * @param _amount The amount of funds to supply.
      */
     function supplyProject(bytes32 _projectId, uint256 _amount) external payable nonReentrant {
-        if ((projectSupply[_projectId].has + _amount) > projectSupply[_projectId].need) {
+
+        // console.log(":::: MANAGER | supplyProject | Need:", projects[_projectId].projectSupply.need);
+        // console.log(":::: MANAGER | supplyProject | Amount:", _amount);
+
+        if ((projects[_projectId].projectSupply.has + _amount) > projects[_projectId].projectSupply.need) {
             revert AMOUNT_IS_BIGGER_THAN_DECLARED_NEEDEDS();
         }
         require(_projectExists(_projectId), "Project does not exist");
 
-        if (_amount == 0 || _amount != msg.value) revert NOT_ENOUGH_FUNDS();
-
-        if (projectPool[_projectId] != 0) revert PROJECT_HAS_POOL();
+        if (_amount == 0) revert NOT_ENOUGH_FUNDS();
+        
+        if (projects[_projectId].projectPool != 0) revert PROJECT_HAS_POOL();
 
         if (projectExecutor[_projectId] == msg.sender) revert EXECUTOR_IS_NOT_ALLOWED_TO_SUPPLY();
 
-        projectSupply[_projectId].has += _amount;
+        _transferAmount(projects[_projectId].token, address(this), _amount);
 
-        if (projectSuppliersById[_projectId].supplyById[msg.sender] == 0) {
-            projectSuppliers[_projectId].push(msg.sender);
+        projects[_projectId].projectSupply.has += _amount;
+
+        if (projects[_projectId].projectSuppliersById.supplyById[msg.sender] == 0) {
+            projects[_projectId].projectSuppliers.push(msg.sender);
         }
 
-        projectSuppliersById[_projectId].supplyById[msg.sender] += _amount;
+        projects[_projectId].projectSuppliersById.supplyById[msg.sender] += _amount;
 
         emit ProjectFunded(_projectId, _amount);
 
-        if (projectSupply[_projectId].has >= projectSupply[_projectId].need) {
+        if (projects[_projectId].projectSupply.has >= projects[_projectId].projectSupply.need) {
             SupplierPower[] memory suppliers = _extractSupliers(_projectId);
             address[] memory managers = new address[](suppliers.length + 1);
 
@@ -354,9 +349,9 @@ contract Manager is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeabl
                 managers
             );
 
-            require(address(this).balance >= projectSupply[_projectId].need, "Insufficient balance in contract");
+            require(address(this).balance >= projects[_projectId].projectSupply.need, "Insufficient balance in contract");
 
-            allo.fundPool{value: projectSupply[_projectId].need}(pool, projectSupply[_projectId].need);
+            allo.fundPool{value: projects[_projectId].projectSupply.need}(pool, projects[_projectId].projectSupply.need);
 
             // bytes memory encodedRecipientParams = abi.encode(
             //     projectExecutor[_projectId],
@@ -367,7 +362,7 @@ contract Manager is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeabl
 
             // allo.registerRecipient(pool, encodedRecipientParams);
 
-            projectPool[_projectId] = pool;
+            projects[_projectId].projectPool = pool;
 
             emit ProjectPoolCreeated(_projectId, pool);
         }
@@ -383,26 +378,26 @@ contract Manager is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeabl
     function revokeProjectSupply(bytes32 _projectId) external nonReentrant {
         require(_projectExists(_projectId), "Project does not exist");
 
-        if (projectPool[_projectId] != 0) revert PROJECT_HAS_POOL();
+        if (projects[_projectId].projectPool != 0) revert PROJECT_HAS_POOL();
 
-        uint256 amount = projectSuppliersById[_projectId].supplyById[msg.sender];
+        uint256 amount = projects[_projectId].projectSuppliersById.supplyById[msg.sender];
         require(amount > 0, "SUPPLY NOT FOUND");
 
-        delete projectSuppliersById[_projectId].supplyById[msg.sender];
+        delete projects[_projectId].projectSuppliersById.supplyById[msg.sender];
 
-        projectSupply[_projectId].has -= amount;
+        projects[_projectId].projectSupply.has -= amount;
 
-        address[] memory updatedSuppliers = new address[](projectSuppliers[_projectId].length - 1);
+        address[] memory updatedSuppliers = new address[](projects[_projectId].projectSuppliers.length - 1);
         uint256 j = 0;
 
-        for (uint256 i = 0; i < projectSuppliers[_projectId].length; i++) {
-            if (projectSuppliers[_projectId][i] != msg.sender) {
-                updatedSuppliers[j] = projectSuppliers[_projectId][i];
+        for (uint256 i = 0; i < projects[_projectId].projectSuppliers.length; i++) {
+            if (projects[_projectId].projectSuppliers[i] != msg.sender) {
+                updatedSuppliers[j] = projects[_projectId].projectSuppliers[i];
                 j++;
             }
         }
 
-        projectSuppliers[_projectId] = updatedSuppliers;
+        projects[_projectId].projectSuppliers = updatedSuppliers;
 
         _transferAmount(NATIVE, msg.sender, amount);
     }
@@ -414,11 +409,11 @@ contract Manager is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeabl
      * @return SupplierPower[] An array of SupplierPower structs, each representing a supplier's power for the project.
      */
     function _extractSupliers(bytes32 _projectId) internal view returns (SupplierPower[] memory) {
-        SupplierPower[] memory suppliersPower = new SupplierPower[](projectSuppliers[_projectId].length);
+        SupplierPower[] memory suppliersPower = new SupplierPower[](projects[_projectId].projectSuppliers.length);
 
-        for (uint256 i = 0; i < projectSuppliers[_projectId].length; i++) {
-            address supplierId = projectSuppliers[_projectId][i];
-            uint256 supplierPower = projectSuppliersById[_projectId].supplyById[supplierId];
+        for (uint256 i = 0; i < projects[_projectId].projectSuppliers.length; i++) {
+            address supplierId = projects[_projectId].projectSuppliers[i];
+            uint256 supplierPower = projects[_projectId].projectSuppliersById.supplyById[supplierId];
 
             suppliersPower[i] = SupplierPower(supplierId, uint256(supplierPower));
         }

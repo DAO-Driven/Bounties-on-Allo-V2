@@ -16,10 +16,9 @@ import "../../lib/openzeppelin-contracts-upgradeable/contracts/access/OwnableUpg
 import "../../lib/openzeppelin-contracts-upgradeable/contracts/utils/ReentrancyGuardUpgradeable.sol";
 
 contract Manager is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeable, Errors {
-
     enum HatType {
         None,
-        Manager, 
+        Manager,
         Executor
     }
 
@@ -53,8 +52,7 @@ contract Manager is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeabl
     /// ========== Storage =============
     /// ================================
 
-    mapping (bytes32 => ProjectInformation) projects;
-
+    mapping(bytes32 => ProjectInformation) projects;
 
     // TODO: delete all this since it is:  mapping (bytes32 => ProjectInformation) projects;
 
@@ -221,7 +219,7 @@ contract Manager is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeabl
         uint256 _nonce,
         string memory _name,
         Metadata memory _metadata
-    ) external returns (bytes32){
+    ) external returns (bytes32) {
         address[] memory members = new address[](2);
         members[0] = msg.sender;
         members[1] = address(this);
@@ -268,7 +266,6 @@ contract Manager is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeabl
      * @param _amount The amount of funds to supply.
      */
     function supplyProject(bytes32 _projectId, uint256 _amount) external payable nonReentrant {
-
         // console.log(":::: MANAGER | supplyProject | Need:", projects[_projectId].projectSupply.need);
         // console.log(":::: MANAGER | supplyProject | Amount:", _amount);
 
@@ -278,7 +275,7 @@ contract Manager is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeabl
         require(_projectExists(_projectId), "Project does not exist");
 
         if (_amount == 0) revert NOT_ENOUGH_FUNDS();
-        
+
         if (projects[_projectId].projectPool != 0) revert PROJECT_HAS_POOL();
 
         if (projectExecutor[_projectId] == msg.sender) revert EXECUTOR_IS_NOT_ALLOWED_TO_SUPPLY();
@@ -349,7 +346,9 @@ contract Manager is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeabl
                 managers
             );
 
-            require(address(this).balance >= projects[_projectId].projectSupply.need, "Insufficient balance in contract");
+            require(
+                address(this).balance >= projects[_projectId].projectSupply.need, "Insufficient balance in contract"
+            );
 
             allo.fundPool{value: projects[_projectId].projectSupply.need}(pool, projects[_projectId].projectSupply.need);
 
@@ -458,8 +457,7 @@ contract Manager is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeabl
 
         if (_hatType == HatType.Manager) {
             projectHats[_projectId].supplierHat = hat;
-        } 
-        else if (_hatType == HatType.Executor) {
+        } else if (_hatType == HatType.Executor) {
             projectHats[_projectId].executorHat = hat;
         }
     }

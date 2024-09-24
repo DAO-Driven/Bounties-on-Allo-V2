@@ -57,7 +57,7 @@ struct ProjectInformation {
     Hats projectHats;
 }
 
- /// @notice Struct to hold details of an recipient
+/// @notice Struct to hold details of an recipient
 struct Recipient {
     bool useRegistryAnchor;
     address recipientAddress;

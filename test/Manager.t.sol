@@ -6,9 +6,7 @@ import {Manager} from "../src/contracts/Manager.sol";
 import {MockERC20} from "../src/contracts/mocks/MockERC20.sol";
 import {Metadata} from "../src/contracts/libraries/Metadata.sol";
 
-
 contract ManagerTest is Test {
-
     Manager public manager;
     address projectExecutor = address(0x456);
     address projectManager1 = address(0x459);
@@ -21,49 +19,27 @@ contract ManagerTest is Test {
 
     event ProjectRegistered(uint256 indexed profileId, uint256 nonce);
 
-
     function setUp() public {
-
         projectToken = new MockERC20("TOKEN", "TKN", 18);
 
         manager = new Manager();
 
         manager.initialize(
-            0x1133eA7Af70876e64665ecD07C0A0476d09465a1, 
-            strategy, 
-            strategyFactory, 
-            hatsContractAddress, 
-            managerHatID
+            0x1133eA7Af70876e64665ecD07C0A0476d09465a1, strategy, strategyFactory, hatsContractAddress, managerHatID
         );
 
         projectToken.mint(address(manager), 2000e18);
     }
 
     function test_registerProjectWithoutPool() external {
-
         manager.registerProject(
-            address(projectToken),
-            1e18,
-            777777,
-            "Test Project",
-            Metadata({
-                protocol: 1,
-                pointer: ""
-            })
+            address(projectToken), 1e18, 777777, "Test Project", Metadata({protocol: 1, pointer: ""})
         );
     }
 
     function test_registerProjectWithoutPoolAndFund() external {
-
         bytes32 profileId = manager.registerProject(
-            address(projectToken),
-            1e18,
-            777777,
-            "Test Project",
-            Metadata({
-                protocol: 1,
-                pointer: ""
-            })
+            address(projectToken), 1e18, 777777, "Test Project", Metadata({protocol: 1, pointer: ""})
         );
 
         vm.startPrank(projectManager1);

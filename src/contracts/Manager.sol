@@ -9,7 +9,6 @@ import {SafeTransferLib} from "../../lib/solady/src/utils/SafeTransferLib.sol";
 import {Errors} from "./libraries/Errors.sol";
 import "./libraries/Structs.sol";
 import "./interfaces/IRegistry.sol";
-
 import "../../lib/openzeppelin-contracts-upgradeable/contracts/proxy/utils/Initializable.sol";
 // import "../../lib/openzeppelin-contracts-upgradeable/contracts/proxy/utils/UUPSUpgradeable.sol";
 import "../../lib/openzeppelin-contracts-upgradeable/contracts/access/OwnableUpgradeable.sol";
@@ -45,8 +44,6 @@ contract Manager is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeabl
 
     /// @notice Voting Threshold Percentage.
     uint8 thresholdPercentage;
-
-    address public constant NATIVE = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 
     /// ================================
     /// ========== Storage =============
@@ -266,15 +263,12 @@ contract Manager is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeabl
      * @param _amount The amount of funds to supply.
      */
     function supplyProject(bytes32 _projectId, uint256 _amount) external payable nonReentrant {
-        // console.log(":::: MANAGER | supplyProject | Need:", projects[_projectId].projectSupply.need);
-        // console.log(":::: MANAGER | supplyProject | Amount:", _amount);
-
         if ((projects[_projectId].projectSupply.has + _amount) > projects[_projectId].projectSupply.need) {
             revert AMOUNT_IS_BIGGER_THAN_DECLARED_NEEDEDS();
         }
         require(_projectExists(_projectId), "Project does not exist");
 
-        if (_amount == 0) revert NOT_ENOUGH_FUNDS();
+        if (_amount == 0 && _amount <= projects[_projectId].projectSupply.need) revert INVALID_AMOUNT();
 
         if (projects[_projectId].projectPool != 0) revert PROJECT_HAS_POOL();
 
@@ -337,7 +331,7 @@ contract Manager is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeabl
                 _projectId,
                 projectStrategy[_projectId],
                 encodedInitData,
-                NATIVE,
+                projects[_projectId].token,
                 0,
                 Metadata({
                     protocol: 1,
@@ -398,7 +392,7 @@ contract Manager is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeabl
 
         projects[_projectId].projectSuppliers = updatedSuppliers;
 
-        _transferAmount(NATIVE, msg.sender, amount);
+        _transferAmount(projects[_projectId].token, msg.sender, amount);
     }
 
     /**
@@ -467,11 +461,11 @@ contract Manager is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeabl
     /// @param _to The address to transfer to
     /// @param _amount The amount to transfer
     function _transferAmount(address _token, address _to, uint256 _amount) internal {
-        if (_token == NATIVE) {
-            SafeTransferLib.safeTransferETH(_to, _amount);
-        } else {
-            SafeTransferLib.safeTransfer(_token, _to, _amount);
-        }
+        // if (_token == NATIVE) {
+        //     SafeTransferLib.safeTransferETH(_to, _amount);
+        // } else {
+        SafeTransferLib.safeTransfer(_token, _to, _amount);
+        // }
     }
 
     // function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}

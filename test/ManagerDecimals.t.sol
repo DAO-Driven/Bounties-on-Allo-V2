@@ -8,7 +8,6 @@ import {Metadata} from "../src/contracts/libraries/Metadata.sol";
 
 contract ManagerTest is Test {
     Manager public manager;
-    address projectExecutor = address(0x456);
     address projectManager1 = address(0x459);
     address strategy = address(0x123);
     address strategyFactory = address(0x457);
@@ -20,7 +19,7 @@ contract ManagerTest is Test {
     event ProjectRegistered(uint256 indexed profileId, uint256 nonce);
 
     function setUp() public {
-        projectToken = new MockERC20("TOKEN", "TKN", 18);
+        projectToken = new MockERC20("TOKEN6", "TKN6", 6);
 
         manager = new Manager();
 
@@ -28,40 +27,13 @@ contract ManagerTest is Test {
             0x1133eA7Af70876e64665ecD07C0A0476d09465a1, strategy, strategyFactory, hatsContractAddress, managerHatID
         );
 
-        projectToken.mint(address(manager), 2000e18);
-    }
-
-    function test_registerProjectWithoutPool() external {
-        manager.registerProject(
-            address(projectToken), 1e18, 777777, "Test Project", Metadata({protocol: 1, pointer: ""})
-        );
-    }
-
-    function test_supplyProject() external {
-        bytes32 profileId = manager.registerProject(
-            address(projectToken), 1e18, 777777, "test_supplyProject Project", Metadata({protocol: 1, pointer: ""})
-        );
-
-        vm.startPrank(projectManager1);
-
-        projectToken.approve(address(manager), 100e18);
-
-        manager.supplyProject(profileId, 0.5e18);
-
-        uint256 projectManager1Supply = manager.getProjectSupplierById(profileId, projectManager1);
-
-        assertTrue(
-            projectManager1Supply == 0.5e18,
-            "Expected projectManager1Supply to be 0.5e18 after supplying funds, but it was not."
-        );
-
-        vm.stopPrank();
+        projectToken.mint(address(manager), 2000e6);
     }
 
     function test_supplyProjectAndRevokeSupply() external {
         bytes32 profileId = manager.registerProject(
             address(projectToken),
-            1e18,
+            1e6,
             777777,
             "test_supplyProjectAndRevokeSupply Project",
             Metadata({protocol: 1, pointer: ""})
@@ -69,15 +41,15 @@ contract ManagerTest is Test {
 
         vm.startPrank(projectManager1);
 
-        projectToken.approve(address(manager), 100e18);
+        projectToken.approve(address(manager), 1e6);
 
-        manager.supplyProject(profileId, 0.5e18);
+        manager.supplyProject(profileId, 0.5e6);
 
         uint256 projectManager1Supply = manager.getProjectSupplierById(profileId, projectManager1);
 
         assertTrue(
-            projectManager1Supply == 0.5e18,
-            "Expected projectManager1Supply to be 0.5e18 after supplying funds, but it was not."
+            projectManager1Supply == 0.5e6,
+            "Expected projectManager1Supply to be 0.5e6 after supplying funds, but it was not."
         );
 
         manager.revokeProjectSupply(profileId);

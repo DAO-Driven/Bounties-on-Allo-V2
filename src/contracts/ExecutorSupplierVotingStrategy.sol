@@ -631,7 +631,7 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
     ///      Requires the transaction to be non-reentrant to prevent potential security vulnerabilities.
     /// @param _amount The total amount of tokens to be distributed to the suppliers.
     function sendTokenOfThanksToSuppliers(uint256 _amount) external payable nonReentrant {
-        if (_amount == 0 || _amount != msg.value) revert NOT_ENOUGH_FUNDS();
+        if (_amount == 0 || _amount != msg.value) revert INVALID_AMOUNT();
 
         if (state != StrategyState.Executed && state != StrategyState.Rejected) revert STRATEGY_IS_STILL_ACIVE();
 

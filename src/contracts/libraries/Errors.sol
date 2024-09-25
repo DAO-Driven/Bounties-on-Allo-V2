@@ -31,7 +31,7 @@ contract Errors {
     error MISMATCH();
 
     /// @notice Thrown when not enough funds are available
-    error NOT_ENOUGH_FUNDS();
+    error INVALID_AMOUNT();
 
     /// @notice Thrown when user is not authorized
     error UNAUTHORIZED();

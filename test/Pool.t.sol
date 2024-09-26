@@ -10,13 +10,13 @@ import {IHats} from "../src/contracts/interfaces/Hats/IHats.sol";
 contract ManagerTest is Test {
     Manager public manager;
     address mainHat = 0x01Ae8d6d0F137CF946e354eA707B698E8CaE6485;
-    uint256 topHatId = 0x0000005200000000000000000000000000000000000000000000000000000000;
+    uint256 topHatId = 0x0000005200010000000000000000000000000000000000000000000000000000;
     address projectExecutor = address(0x456);
     address projectManager1 = address(0x459);
     address strategy = address(0x123);
     address strategyFactory = address(0x457);
     address hatsContractAddress = 0x3bc1A0Ad72417f2d411118085256fC53CBdDd137;
-    uint256 managerHatID = 1;
+    uint256 managerHatID = 0x0000005200010000000000000000000000000000000000000000000000000000;
 
     MockERC20 projectToken;
 
@@ -38,8 +38,9 @@ contract ManagerTest is Test {
         vm.prank(mainHat);
         hatsProtocol.transferHat(topHatId, mainHat, address(manager));
 
+        // vm.prank(mainHat);
         // uint256 hat = hatsProtocol.createHat(
-        //     managerHatID,                     // Admin hat ID (must be valid in the hierarchy)
+        //     0x0000005200010000000000000000000000000000000000000000000000000000,                     // Admin hat ID (must be valid in the hierarchy)
         //     "_hatName",                         // Hat description/name
         //     uint32(1),       // Max supply set to the number of wearers
         //     address(manager),                    // Address for eligibility module (should implement eligibility logic)
@@ -47,6 +48,8 @@ contract ManagerTest is Test {
         //     true,                             // Mutable property - hat can be changed
         //     "ipfs://bafkreiey2a5jtqvjl4ehk3jx7fh7edsjqmql6vqxdh47znsleetug44umy/"                          // Image URI for the hat
         // );
+
+        // console.log(":::::::::: NEW HAT:", hat);
     }
 
     function test_supplyProject() external {

@@ -59,9 +59,6 @@ contract Manager is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeabl
     /// @notice Mapping from project ID to the address of its strategy contract.
     mapping(bytes32 => address) projectStrategy;
 
-    /// @notice Mapping from project ID to its associated hats (executor and supplier hats).
-    mapping(bytes32 => Hats) projectHats;
-
     bool private initialized;
 
     /// ===============================
@@ -450,9 +447,9 @@ contract Manager is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeabl
         }
 
         if (_hatType == HatType.Manager) {
-            projectHats[_projectId].supplierHat = hat;
+            projects[_projectId].projectHats.supplierHat = hat;
         } else if (_hatType == HatType.Executor) {
-            projectHats[_projectId].executorHat = hat;
+            projects[_projectId].projectHats.executorHat = hat;
         }
     }
 

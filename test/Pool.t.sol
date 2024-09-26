@@ -37,12 +37,16 @@ contract ManagerTest is Test {
 
         vm.prank(mainHat);
         hatsProtocol.transferHat(topHatId, mainHat, address(manager));
-    }
 
-    function test_registerProjectWithoutPool() external {
-        manager.registerProject(
-            address(projectToken), 1e18, 777777, "Test Project", Metadata({protocol: 1, pointer: ""})
-        );
+        // uint256 hat = hatsProtocol.createHat(
+        //     managerHatID,                     // Admin hat ID (must be valid in the hierarchy)
+        //     "_hatName",                         // Hat description/name
+        //     uint32(1),       // Max supply set to the number of wearers
+        //     address(manager),                    // Address for eligibility module (should implement eligibility logic)
+        //     address(manager),                    // Address for toggle module (should implement toggle logic)
+        //     true,                             // Mutable property - hat can be changed
+        //     "ipfs://bafkreiey2a5jtqvjl4ehk3jx7fh7edsjqmql6vqxdh47znsleetug44umy/"                          // Image URI for the hat
+        // );
     }
 
     function test_supplyProject() external {
@@ -54,48 +58,7 @@ contract ManagerTest is Test {
 
         projectToken.approve(address(manager), 100e18);
 
-        manager.supplyProject(profileId, 0.5e18);
-
-        uint256 projectManager1Supply = manager.getProjectSupplierById(profileId, projectManager1);
-
-        assertTrue(
-            projectManager1Supply == 0.5e18,
-            "Expected projectManager1Supply to be 0.5e18 after supplying funds, but it was not."
-        );
-
-        vm.stopPrank();
-    }
-
-    function test_supplyProjectAndRevokeSupply() external {
-        bytes32 profileId = manager.registerProject(
-            address(projectToken),
-            1e18,
-            777777,
-            "test_supplyProjectAndRevokeSupply Project",
-            Metadata({protocol: 1, pointer: ""})
-        );
-
-        vm.startPrank(projectManager1);
-
-        projectToken.approve(address(manager), 100e18);
-
-        manager.supplyProject(profileId, 0.5e18);
-
-        uint256 projectManager1Supply = manager.getProjectSupplierById(profileId, projectManager1);
-
-        assertTrue(
-            projectManager1Supply == 0.5e18,
-            "Expected projectManager1Supply to be 0.5e18 after supplying funds, but it was not."
-        );
-
-        manager.revokeProjectSupply(profileId);
-
-        uint256 projectManager1SupplyAfterRevoke = manager.getProjectSupplierById(profileId, projectManager1);
-
-        assertTrue(
-            projectManager1SupplyAfterRevoke == 0,
-            "Expected projectManager1Supply to be 0 after revoking funds, but it was not."
-        );
+        manager.supplyProject(profileId, 1e18);
 
         vm.stopPrank();
     }

@@ -274,7 +274,7 @@ contract Manager is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeabl
 
         if (projectExecutor[_projectId] == msg.sender) revert EXECUTOR_IS_NOT_ALLOWED_TO_SUPPLY();
 
-        _transferAmount(projects[_projectId].token, address(this), _amount);
+        SafeTransferLib.safeTransferFrom(projects[_projectId].token, address(msg.sender), address(this), _amount);
 
         projects[_projectId].projectSupply.has += _amount;
 
@@ -304,8 +304,8 @@ contract Manager is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeabl
                 HatType.Manager
             );
 
-            address[] memory executorAddresses = new address[](1);
-            executorAddresses[0] = projectExecutor[_projectId];
+            // address[] memory executorAddresses = new address[](1);
+            // executorAddresses[0] = projectExecutor[_projectId];
 
             // _createAndMintHat(
             //     "Recipient",
@@ -315,36 +315,36 @@ contract Manager is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeabl
             //     false
             // );
 
-            bytes memory encodedInitData = abi.encode(
-                InitializeData({
-                    supplierHat: projectHats[_projectId].supplierHat,
-                    executorHat: projectHats[_projectId].executorHat,
-                    supliersPower: suppliers,
-                    hatsContractAddress: hatsContractAddress,
-                    thresholdPercentage: thresholdPercentage
-                })
-            );
+            // bytes memory encodedInitData = abi.encode(
+            //     InitializeData({
+            //         supplierHat: projectHats[_projectId].supplierHat,
+            //         executorHat: projectHats[_projectId].executorHat,
+            //         supliersPower: suppliers,
+            //         hatsContractAddress: hatsContractAddress,
+            //         thresholdPercentage: thresholdPercentage
+            //     })
+            // );
 
-            projectStrategy[_projectId] = strategyFactory.createStrategy(strategy);
+            // projectStrategy[_projectId] = strategyFactory.createStrategy(strategy);
 
-            uint256 pool = allo.createPoolWithCustomStrategy(
-                _projectId,
-                projectStrategy[_projectId],
-                encodedInitData,
-                projects[_projectId].token,
-                0,
-                Metadata({
-                    protocol: 1,
-                    pointer: "https://github.com/alexandr-masl/web3-crowdfunding-on-allo-V2/blob/main/contracts/ExecutorSupplierVotingStrategy.sol"
-                }),
-                managers
-            );
+            // uint256 pool = allo.createPoolWithCustomStrategy(
+            //     _projectId,
+            //     projectStrategy[_projectId],
+            //     encodedInitData,
+            //     projects[_projectId].token,
+            //     0,
+            //     Metadata({
+            //         protocol: 1,
+            //         pointer: "https://github.com/alexandr-masl/web3-crowdfunding-on-allo-V2/blob/main/contracts/ExecutorSupplierVotingStrategy.sol"
+            //     }),
+            //     managers
+            // );
 
-            require(
-                address(this).balance >= projects[_projectId].projectSupply.need, "Insufficient balance in contract"
-            );
+            // require(
+            //     address(this).balance >= projects[_projectId].projectSupply.need, "Insufficient balance in contract"
+            // );
 
-            allo.fundPool{value: projects[_projectId].projectSupply.need}(pool, projects[_projectId].projectSupply.need);
+            // allo.fundPool{value: projects[_projectId].projectSupply.need}(pool, projects[_projectId].projectSupply.need);
 
             // bytes memory encodedRecipientParams = abi.encode(
             //     projectExecutor[_projectId],
@@ -355,9 +355,9 @@ contract Manager is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeabl
 
             // allo.registerRecipient(pool, encodedRecipientParams);
 
-            projects[_projectId].projectPool = pool;
+            // projects[_projectId].projectPool = pool;
 
-            emit ProjectPoolCreeated(_projectId, pool);
+            // emit ProjectPoolCreeated(_projectId, pool);
         }
     }
 

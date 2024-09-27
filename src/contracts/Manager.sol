@@ -427,11 +427,11 @@ contract Manager is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeabl
         console.log(":::::: MANAGER | New Hat Id:", hat);
 
         for (uint256 i = 0; i < _hatWearers.length; i++) {
-
             bool isEligible = hatsContract.isEligible(_hatWearers[i], hat);
 
-            if (isEligible)
+            if (isEligible) {
                 hatsContract.mintHat(hat, _hatWearers[i]);
+            }
         }
 
         if (_hatType == HatType.Manager) {

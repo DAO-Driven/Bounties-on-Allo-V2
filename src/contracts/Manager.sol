@@ -232,24 +232,6 @@ contract Manager is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeabl
         return profileId;
     }
 
-    // /**
-    //  * @notice Updates the funding requirements ('needs') for a specific project.
-    //  * @dev Requires that the caller is the project executor, the new needs value is greater than the current supply to ensure
-    //  *      project requirements are realistic, and that the new needs value accounts for necessary fees.
-    //  *      This function is intended to adjust the project's funding target based on revised estimates or project scope changes.
-    //  * @param _projectId The ID of the project for which to update funding requirements.
-    //  * @param _needs The new funding requirement (needs) value for the project.
-    //  */
-    // function updateProjectNeeds(bytes32 _projectId, uint256 _needs) external {
-    //     require(projectExecutor[_projectId] == msg.sender, "UNAUTHORIZED: Caller must be project executor.");
-    //     require(_needs > projectSupply[_projectId].has, "INVALID VALUE: Needs must exceed current supply.");
-    //     require(_needs > allo.getPercentFee(), "LESS THAN FEE: Needs must be greater than the fee.");
-
-    //     projectSupply[_projectId].need = _needs;
-
-    //     emit ProjectNeedsUpdated(_projectId, _needs);
-    // }
-
     /**
      * @notice Supplies funds to a specific project.
      * @dev This function requires that the project exists and is not fully funded.
@@ -312,15 +294,15 @@ contract Manager is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeabl
             //     false
             // );
 
-            // bytes memory encodedInitData = abi.encode(
-            //     InitializeData({
-            //         supplierHat: projectHats[_projectId].supplierHat,
-            //         executorHat: projectHats[_projectId].executorHat,
-            //         supliersPower: suppliers,
-            //         hatsContractAddress: hatsContractAddress,
-            //         thresholdPercentage: thresholdPercentage
-            //     })
-            // );
+            bytes memory encodedInitData = abi.encode(
+                InitializeData({
+                    supplierHat: projects[_projectId].projectHats.supplierHat,
+                    executorHat: projects[_projectId].projectHats.supplierHat,
+                    supliersPower: suppliers,
+                    hatsContractAddress: hatsContractAddress,
+                    thresholdPercentage: thresholdPercentage
+                })
+            );
 
             // projectStrategy[_projectId] = strategyFactory.createStrategy(strategy);
 
@@ -442,8 +424,14 @@ contract Manager is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeabl
             managerHatID, _hatName, uint32(_hatWearers.length), address(this), address(this), true, _imageURI
         );
 
+        console.log(":::::: MANAGER | New Hat Id:", hat);
+
         for (uint256 i = 0; i < _hatWearers.length; i++) {
-            hatsContract.mintHat(hat, _hatWearers[i]);
+
+            bool isEligible = hatsContract.isEligible(_hatWearers[i], hat);
+
+            if (isEligible)
+                hatsContract.mintHat(hat, _hatWearers[i]);
         }
 
         if (_hatType == HatType.Manager) {

@@ -4,11 +4,14 @@ pragma solidity ^0.8.24;
 import "forge-std/Test.sol";
 import {IAllo} from "./interfaces/IAllo.sol";
 import {IStrategyFactory} from "./interfaces/IStrategyFactory.sol";
+import {ExecutorSupplierVotingStrategy} from "./ExecutorSupplierVotingStrategy.sol";
 import {IHats} from "./interfaces/Hats/IHats.sol";
 import {SafeTransferLib} from "../../lib/solady/src/utils/SafeTransferLib.sol";
 import {Errors} from "./libraries/Errors.sol";
+
 import "./libraries/Structs.sol";
 import "./interfaces/IRegistry.sol";
+import "../../lib/openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import "../../lib/openzeppelin-contracts-upgradeable/contracts/proxy/utils/Initializable.sol";
 // import "../../lib/openzeppelin-contracts-upgradeable/contracts/proxy/utils/UUPSUpgradeable.sol";
 import "../../lib/openzeppelin-contracts-upgradeable/contracts/access/OwnableUpgradeable.sol";
@@ -56,9 +59,6 @@ contract Manager is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeabl
     /// @notice Mapping from project ID to the address of its executor.
     mapping(bytes32 => address) projectExecutor;
 
-    /// @notice Mapping from project ID to the address of its strategy contract.
-    mapping(bytes32 => address) projectStrategy;
-
     bool private initialized;
 
     /// ===============================
@@ -73,7 +73,7 @@ contract Manager is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeabl
     /// @notice Emitted when a pool is created for a project.
     /// @param projectId The ID of the project for which the pool was created.
     /// @param poolId The ID of the newly created pool.
-    event ProjectPoolCreeated(bytes32 projectId, uint256 poolId);
+    event ProjectPoolCreated(bytes32 projectId, uint256 poolId);
 
     event ProjectRegistered(bytes32 profileId, uint256 nonce);
 
@@ -143,7 +143,7 @@ contract Manager is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeabl
     /// @param _projectId The ID of the project.
     /// @return address The address of the strategy associated with the specified project.
     function getProjectStrategy(bytes32 _projectId) public view returns (address) {
-        return projectStrategy[_projectId];
+        return projects[_projectId].projectStrategy;
     }
 
     /**
@@ -237,7 +237,7 @@ contract Manager is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeabl
      * @dev This function requires that the project exists and is not fully funded.
      *      The supplied amount must be non-zero and equal to the sent value. If the supplied amount meets or exceeds
      *      the project's need, it triggers the creation of supplier and executor hats, and initializes a new pool
-     *      with a custom strategy. Emits a ProjectFunded event and, if funding is complete, a ProjectPoolCreeated event.
+     *      with a custom strategy. Emits a ProjectFunded event and, if funding is complete, a ProjectPoolCreated event.
      * @param _projectId The ID of the project to supply funds to.
      * @param _amount The amount of funds to supply.
      */
@@ -266,7 +266,7 @@ contract Manager is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeabl
         emit ProjectFunded(_projectId, _amount);
 
         if (projects[_projectId].projectSupply.has >= projects[_projectId].projectSupply.need) {
-            SupplierPower[] memory suppliers = _extractSupliers(_projectId);
+            ExecutorSupplierVotingStrategy.SupplierPower[] memory suppliers = _extractSupliers(_projectId);
             address[] memory managers = new address[](suppliers.length + 1);
 
             for (uint256 i = 0; i < suppliers.length; i++) {
@@ -294,36 +294,42 @@ contract Manager is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeabl
             //     false
             // );
 
+
             bytes memory encodedInitData = abi.encode(
-                InitializeData({
-                    supplierHat: projects[_projectId].projectHats.supplierHat,
-                    executorHat: projects[_projectId].projectHats.supplierHat,
-                    supliersPower: suppliers,
+                ExecutorSupplierVotingStrategy.InitializeData({
+                    supplierHat: projects[_projectId].projectHats.supplierHat, 
+                    executorHat: projects[_projectId].projectHats.supplierHat, 
+                    projectSuppliers: suppliers, 
                     hatsContractAddress: hatsContractAddress,
                     thresholdPercentage: thresholdPercentage
                 })
             );
 
-            // projectStrategy[_projectId] = strategyFactory.createStrategy(strategy);
+            projects[_projectId].projectStrategy = strategyFactory.createStrategy(strategy);
 
-            // uint256 pool = allo.createPoolWithCustomStrategy(
-            //     _projectId,
-            //     projectStrategy[_projectId],
-            //     encodedInitData,
-            //     projects[_projectId].token,
-            //     0,
-            //     Metadata({
-            //         protocol: 1,
-            //         pointer: "https://github.com/alexandr-masl/web3-crowdfunding-on-allo-V2/blob/main/contracts/ExecutorSupplierVotingStrategy.sol"
-            //     }),
-            //     managers
-            // );
+            uint256 pool = allo.createPoolWithCustomStrategy(
+                _projectId,
+                projects[_projectId].projectStrategy,
+                encodedInitData,
+                projects[_projectId].token,
+                0,
+                Metadata({
+                    protocol: 1,
+                    pointer: "https://github.com/alexandr-masl/web3-crowdfunding-on-allo-V2/blob/main/contracts/ExecutorSupplierVotingStrategy.sol"
+                }),
+                managers
+            );
 
-            // require(
-            //     address(this).balance >= projects[_projectId].projectSupply.need, "Insufficient balance in contract"
-            // );
+            IERC20 token = IERC20(projects[_projectId].token);
 
-            // allo.fundPool{value: projects[_projectId].projectSupply.need}(pool, projects[_projectId].projectSupply.need);
+            require(
+                token.balanceOf(address(this)) >= projects[_projectId].projectSupply.need,
+                "Insufficient token balance in contract"
+            );
+
+            token.approve(address(allo), _amount);
+
+            allo.fundPool(pool, projects[_projectId].projectSupply.need);
 
             // bytes memory encodedRecipientParams = abi.encode(
             //     projectExecutor[_projectId],
@@ -334,9 +340,9 @@ contract Manager is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeabl
 
             // allo.registerRecipient(pool, encodedRecipientParams);
 
-            // projects[_projectId].projectPool = pool;
+            projects[_projectId].projectPool = pool;
 
-            // emit ProjectPoolCreeated(_projectId, pool);
+            emit ProjectPoolCreated(_projectId, pool);
         }
     }
 
@@ -380,14 +386,14 @@ contract Manager is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeabl
      * @param _projectId The ID of the project for which to extract supplier powers.
      * @return SupplierPower[] An array of SupplierPower structs, each representing a supplier's power for the project.
      */
-    function _extractSupliers(bytes32 _projectId) internal view returns (SupplierPower[] memory) {
-        SupplierPower[] memory suppliersPower = new SupplierPower[](projects[_projectId].projectSuppliers.length);
+    function _extractSupliers(bytes32 _projectId) internal view returns (ExecutorSupplierVotingStrategy.SupplierPower[] memory) {
+        ExecutorSupplierVotingStrategy.SupplierPower[] memory suppliersPower = new ExecutorSupplierVotingStrategy.SupplierPower[](projects[_projectId].projectSuppliers.length);
 
         for (uint256 i = 0; i < projects[_projectId].projectSuppliers.length; i++) {
             address supplierId = projects[_projectId].projectSuppliers[i];
             uint256 supplierPower = projects[_projectId].projectSuppliersById.supplyById[supplierId];
 
-            suppliersPower[i] = SupplierPower(supplierId, uint256(supplierPower));
+            suppliersPower[i] = ExecutorSupplierVotingStrategy.SupplierPower(supplierId, uint256(supplierPower));
         }
 
         return suppliersPower;
@@ -424,8 +430,6 @@ contract Manager is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeabl
             managerHatID, _hatName, uint32(_hatWearers.length), address(this), address(this), true, _imageURI
         );
 
-        console.log(":::::: MANAGER | New Hat Id:", hat);
-
         for (uint256 i = 0; i < _hatWearers.length; i++) {
             bool isEligible = hatsContract.isEligible(_hatWearers[i], hat);
 
@@ -436,7 +440,8 @@ contract Manager is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeabl
 
         if (_hatType == HatType.Manager) {
             projects[_projectId].projectHats.supplierHat = hat;
-        } else if (_hatType == HatType.Executor) {
+        } 
+        else if (_hatType == HatType.Executor) {
             projects[_projectId].projectHats.executorHat = hat;
         }
     }

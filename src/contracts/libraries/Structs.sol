@@ -13,15 +13,6 @@ enum Status {
     Canceled
 }
 
-/// @notice Struct to hold initialization data for setting up a project or strategy.
-struct InitializeData {
-    uint256 supplierHat; // ID of the Supplier Hat.
-    uint256 executorHat; // ID of the Executor Hat.
-    SupplierPower[] supliersPower; // Array of SupplierPower, representing the power of each supplier.
-    address hatsContractAddress; // Address of the Hats contract.
-    uint8 thresholdPercentage;
-}
-
 /// @notice Struct representing the supply details of a project.
 struct ProjectSupply {
     uint256 need; // The total amount needed for the project.
@@ -31,12 +22,6 @@ struct ProjectSupply {
 /// @notice Struct for mapping suppliers to their supply amount by ID.
 struct SuppliersById {
     mapping(address => uint256) supplyById; // Maps supplier address to their supply amount.
-}
-
-/// @notice Struct representing the power or influence of a supplier.
-struct SupplierPower {
-    address supplierId; // Address of the supplier.
-    uint256 supplierPowerr; // Power value associated with the supplier.
 }
 
 /// @notice Struct holding IDs for different types of hats used in the system.

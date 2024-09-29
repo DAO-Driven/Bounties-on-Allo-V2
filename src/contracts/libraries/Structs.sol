@@ -30,18 +30,6 @@ struct Hats {
     uint256 supplierHat; // ID of the Supplier Hat.
 }
 
-/// @notice Struct containing all information relevant to a project.
-struct ProjectInformation {
-    address token;
-    address projectExecutor;
-    address[] projectSuppliers;
-    SuppliersById projectSuppliersById;
-    ProjectSupply projectSupply;
-    uint256 projectPool;
-    address projectStrategy;
-    Hats projectHats;
-}
-
 /// @notice Struct to hold details of an recipient
 struct Recipient {
     bool useRegistryAnchor;

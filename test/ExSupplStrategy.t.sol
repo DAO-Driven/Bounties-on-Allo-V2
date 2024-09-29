@@ -30,17 +30,16 @@ contract ManagerTest is Test {
         strategyFactory = new StrategyFactory();
 
         strategy = new ExecutorSupplierVotingStrategy(
-            0x1133eA7Af70876e64665ecD07C0A0476d09465a1, 
-            "ExecutorSupplierVotingStrategy"
+            0x1133eA7Af70876e64665ecD07C0A0476d09465a1, "ExecutorSupplierVotingStrategy"
         );
 
         manager = new Manager();
 
         manager.initialize(
-            0x1133eA7Af70876e64665ecD07C0A0476d09465a1, 
-            address(strategy), 
-            address(strategyFactory), 
-            hatsContractAddress, 
+            0x1133eA7Af70876e64665ecD07C0A0476d09465a1,
+            address(strategy),
+            address(strategyFactory),
+            hatsContractAddress,
             managerHatID
         );
 
@@ -50,25 +49,33 @@ contract ManagerTest is Test {
 
         vm.prank(mainHat);
         hatsProtocol.transferHat(topHatId, mainHat, address(manager));
-
-
     }
 
     function test_createPoolWithCustomStrategy() external {
-
         vm.startPrank(projectManager1);
 
         bytes32 profileId = manager.registerProject(
-            address(projectToken), 
-            1e18, 
-            777777, 
-            "test_createPoolWithCustomStrategy", 
+            address(projectToken),
+            1e18,
+            777777,
+            "test_createPoolWithCustomStrategy",
             Metadata({protocol: 1, pointer: ""})
         );
-        
+
         projectToken.approve(address(manager), 100e18);
 
         manager.supplyProject(profileId, 1e18);
+
+        address projectStrategy = manager.getProjectStrategy(profileId);
+
+        console.log("::::: projectStrategy:", projectStrategy);
+
+        ExecutorSupplierVotingStrategy strategyContract = ExecutorSupplierVotingStrategy(payable(projectStrategy));
+
+        address creator = strategyContract.creator();
+        console.log("::::: Strategy Creator:", creator);
+
+        strategyContract.registerRecipient(projectExecutor);
 
         vm.stopPrank();
     }

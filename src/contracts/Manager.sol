@@ -24,6 +24,19 @@ contract Manager is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeabl
         Executor
     }
 
+    /// @notice Struct containing all information relevant to a project.
+    struct ProjectInformation {
+        address token;
+        address projectExecutor;
+        address[] projectSuppliers;
+        SuppliersById projectSuppliersById;
+        ProjectSupply projectSupply;
+        uint256 projectPool;
+        address projectStrategy;
+        Hats projectHats;
+        address creator;
+    }
+
     /// @notice Interface to interact with the Registry contract.
     IRegistry registry;
 
@@ -223,7 +236,7 @@ contract Manager is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeabl
         projects[profileId].token = _token;
         // projects[profileId].projectExecutor = _recipient;
         projects[profileId].projectSupply.need = allo.getPercentFee() + _needs;
-
+        projects[profileId].creator = msg.sender;
         // projectSupply[profileId].need += allo.getPercentFee() + _needs;
         // projectExecutor[profileId] = _recipient;
 
@@ -294,14 +307,14 @@ contract Manager is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeabl
             //     false
             // );
 
-
             bytes memory encodedInitData = abi.encode(
                 ExecutorSupplierVotingStrategy.InitializeData({
-                    supplierHat: projects[_projectId].projectHats.supplierHat, 
-                    executorHat: projects[_projectId].projectHats.supplierHat, 
-                    projectSuppliers: suppliers, 
+                    supplierHat: projects[_projectId].projectHats.supplierHat,
+                    executorHat: projects[_projectId].projectHats.supplierHat,
+                    projectSuppliers: suppliers,
                     hatsContractAddress: hatsContractAddress,
-                    thresholdPercentage: thresholdPercentage
+                    thresholdPercentage: thresholdPercentage,
+                    creator: projects[_projectId].creator
                 })
             );
 
@@ -386,8 +399,13 @@ contract Manager is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeabl
      * @param _projectId The ID of the project for which to extract supplier powers.
      * @return SupplierPower[] An array of SupplierPower structs, each representing a supplier's power for the project.
      */
-    function _extractSupliers(bytes32 _projectId) internal view returns (ExecutorSupplierVotingStrategy.SupplierPower[] memory) {
-        ExecutorSupplierVotingStrategy.SupplierPower[] memory suppliersPower = new ExecutorSupplierVotingStrategy.SupplierPower[](projects[_projectId].projectSuppliers.length);
+    function _extractSupliers(bytes32 _projectId)
+        internal
+        view
+        returns (ExecutorSupplierVotingStrategy.SupplierPower[] memory)
+    {
+        ExecutorSupplierVotingStrategy.SupplierPower[] memory suppliersPower =
+            new ExecutorSupplierVotingStrategy.SupplierPower[](projects[_projectId].projectSuppliers.length);
 
         for (uint256 i = 0; i < projects[_projectId].projectSuppliers.length; i++) {
             address supplierId = projects[_projectId].projectSuppliers[i];
@@ -440,8 +458,7 @@ contract Manager is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeabl
 
         if (_hatType == HatType.Manager) {
             projects[_projectId].projectHats.supplierHat = hat;
-        } 
-        else if (_hatType == HatType.Executor) {
+        } else if (_hatType == HatType.Executor) {
             projects[_projectId].projectHats.executorHat = hat;
         }
     }

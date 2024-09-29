@@ -70,6 +70,7 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
         SupplierPower[] projectSuppliers; // Array of SupplierPower, representing the power of each supplier.
         address hatsContractAddress; // Address of the Hats contract.
         uint8 thresholdPercentage;
+        address creator;
     }
 
     /// @notice Struct to represent the offered milestones along with their voting status.
@@ -147,6 +148,8 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
     /// @notice Holds the current state of the strategy.
     StrategyState public state;
 
+    address public creator;
+
     /// @notice Stores the ID of the Supplier Hat.
     uint256 public supplierHat;
 
@@ -155,6 +158,8 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
 
     /// @notice Total supply of tokens or resources managed by the strategy.
     uint256 public totalSupply;
+
+    uint256 public currentSupply;
 
     /// @notice Percentage threshold for decision-making or other strategy-related actions.
     uint256 public thresholdPercentage;
@@ -234,6 +239,7 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
         executorHat = _initData.executorHat;
         thresholdPercentage = _initData.thresholdPercentage;
         hatsContract = IHats(_initData.hatsContractAddress);
+        creator = _initData.creator;
 
         SupplierPower[] memory supliersPower = _initData.projectSuppliers;
 
@@ -249,6 +255,8 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
             _suplierPower[supliersPower[i].supplierId] = (supliersPower[i].supplierPowerr * 1e18) / totalInvestment;
             totalSupply += _suplierPower[supliersPower[i].supplierId];
         }
+
+        currentSupply = totalSupply;
 
         _registry = allo.getRegistry();
 
@@ -373,6 +381,17 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
     /// ===============================
     /// ======= External/Custom =======
     /// ===============================
+
+    function registerRecipient(address _recipient) external {
+        bytes memory encodedRecipientParams = abi.encode(
+            _recipient,
+            0x0000000000000000000000000000000000000000,
+            currentSupply,
+            Metadata({protocol: 1, pointer: "executor"})
+        );
+
+        allo.registerRecipient(poolId, encodedRecipientParams);
+    }
 
     /// @notice Offers milestones to a specific recipient.
     /// @param _recipientId The ID of the recipient to whom the milestones are being offered.

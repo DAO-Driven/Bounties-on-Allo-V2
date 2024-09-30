@@ -39,10 +39,10 @@ jobs:
           forge build --sizes
         id: build
 
-      - name: Set ETH_RPC_URL Environment Variable
-        run: echo "ETH_RPC_URL=https://rpc.ankr.com/eth" >> $GITHUB_ENV
-
+      - name: Set SEPOLIA_RPC_URL Environment Variable
+        run: echo "SEPOLIA_RPC_URL=https://rpc.sepolia.dev" >> $GITHUB_ENV
+      
       - name: Run Forge tests
         run: |
-          forge test --fork-url $ETH_RPC_URL -vvv
+          forge test --fork-url $SEPOLIA_RPC_URL
         id: test

@@ -81,6 +81,12 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
         mapping(address => uint256) suppliersVotes; // Mapping of supplier addresses to their vote counts.
     }
 
+    struct OfferedRecipient {
+        uint256 votesFor;
+        uint256 votesAgainst;
+        mapping(address => uint256) managersVotes;
+    }
+
     /// @notice Struct to represent a submitted milestone and its voting status.
     struct SubmiteddMilestone {
         uint256 votesFor; // Total number of votes in favor of the submitted milestone.
@@ -179,6 +185,8 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
     /// @notice Temporary storage for supplier addresses.
     address[] private _suppliersStore;
 
+    mapping(address => OfferedMilestones) offeredMilestones;
+
     /// @notice Mapping of recipient addresses to their detailed information.
     /// @dev Maps 'recipientId' to 'Recipient' struct.
     mapping(address => Recipient) private _recipients;
@@ -187,7 +195,7 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
     mapping(address => uint256) private _suplierPower;
 
     /// @notice Mapping of recipient addresses to their offered milestones.
-    mapping(address => OfferedMilestones) offeredMilestones;
+    mapping(address => OfferedRecipient) offeredRecipient;
 
     /// @notice Struct holding information about project rejection voting.
     RejectProject projectReject;
@@ -382,7 +390,11 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
     /// ======= External/Custom =======
     /// ===============================
 
-    function registerRecipient(address _recipient) external {
+    function reviewRecipient(address _recipient, Status _status) external {
+        if (_recipients[_recipient].recipientStatus == Status.Accepted && _status == Status.Accepted) {
+            revert RECIPIENT_ALREADY_ACCEPTED();
+        }
+
         bytes memory encodedRecipientParams = abi.encode(
             _recipient,
             0x0000000000000000000000000000000000000000,
@@ -390,7 +402,46 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
             Metadata({protocol: 1, pointer: "executor"})
         );
 
-        allo.registerRecipient(poolId, encodedRecipientParams);
+        if (msg.sender == creator) {
+            if (_status == Status.Accepted) {
+                allo.registerRecipient(poolId, encodedRecipientParams);
+            } else if (_status == Status.Rejected) {
+                _removeRecipient(_recipient);
+            }
+        } else {
+            if (!hatsContract.isWearerOfHat(msg.sender, supplierHat)) {
+                revert SUPPLIER_HAT_WEARING_REQUIRED();
+            } else if (offeredRecipient[_recipient].managersVotes[msg.sender] > 0) {
+                revert ALREADY_REVIEWED();
+            }
+
+            uint256 managerVotingPower = _suplierPower[msg.sender];
+            uint256 threshold = totalSupply * thresholdPercentage / 100;
+
+            offeredRecipient[_recipient].managersVotes[msg.sender] = managerVotingPower;
+
+            if (_status == Status.Accepted) {
+                offeredRecipient[_recipient].votesFor += managerVotingPower;
+
+                if (offeredRecipient[_recipient].votesFor > threshold) {
+                    allo.registerRecipient(poolId, encodedRecipientParams);
+                }
+            } else if (_status == Status.Rejected) {
+                offeredRecipient[_recipient].votesAgainst += managerVotingPower;
+
+                if (offeredRecipient[_recipient].votesAgainst > threshold) {
+                    _removeRecipient(_recipient);
+                }
+            }
+        }
+    }
+
+    function _removeRecipient(address _recipient) internal {
+        for (uint256 i = 0; i < _suppliersStore.length; i++) {
+            offeredRecipient[_recipient].managersVotes[_suppliersStore[i]] = 0;
+        }
+        delete offeredRecipient[_recipient];
+        delete _recipients[_recipient];
     }
 
     /// @notice Offers milestones to a specific recipient.

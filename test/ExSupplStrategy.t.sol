@@ -8,6 +8,7 @@ import {Metadata} from "../src/contracts/libraries/Metadata.sol";
 import {IHats} from "../src/contracts/interfaces/Hats/IHats.sol";
 import {ExecutorSupplierVotingStrategy} from "../src/contracts/ExecutorSupplierVotingStrategy.sol";
 import {StrategyFactory} from "../src/contracts/libraries/StrategyFactory.sol";
+import {IStrategy} from "../src/contracts/interfaces/IStrategy.sol";
 
 contract ManagerTest is Test {
     Manager public manager;
@@ -75,7 +76,11 @@ contract ManagerTest is Test {
         address creator = strategyContract.creator();
         console.log("::::: Strategy Creator:", creator);
 
-        strategyContract.registerRecipient(projectExecutor);
+        strategyContract.reviewRecipient(projectExecutor, IStrategy.Status.Accepted);
+
+        strategyContract.reviewRecipient(projectExecutor, IStrategy.Status.Rejected);
+
+        strategyContract.reviewRecipient(projectExecutor, IStrategy.Status.Accepted);
 
         vm.stopPrank();
     }

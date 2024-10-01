@@ -700,27 +700,6 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
         }
     }
 
-    /// @notice Distributes a 'thank you' token amount to suppliers based on their contribution percentage.
-    /// @dev This function should only be called after the strategy is executed or rejected.
-    ///      It calculates the distribution amount for each supplier based on their power percentage.
-    ///      The function ensures that the total distributed amount matches the `_amount` sent with the transaction.
-    ///      Emits a `TokenOfThanksSent` event for each supplier receiving the token.
-    ///      Requires the transaction to be non-reentrant to prevent potential security vulnerabilities.
-    /// @param _amount The total amount of tokens to be distributed to the suppliers.
-    function sendTokenOfThanksToSuppliers(uint256 _amount) external payable nonReentrant {
-        if (_amount == 0 || _amount != msg.value) revert INVALID_AMOUNT();
-
-        if (state != StrategyState.Executed && state != StrategyState.Rejected) revert STRATEGY_IS_STILL_ACIVE();
-
-        for (uint256 i = 0; i < _suppliersStore.length; i++) {
-            uint256 percentage = _suplierPower[_suppliersStore[i]];
-            uint256 amount = _amount * percentage / 1e18;
-            _transferAmount(NATIVE, _suppliersStore[i], amount);
-
-            emit TokenOfThanksSent(_suppliersStore[i], amount);
-        }
-    }
-
     /// ====================================
     /// ============ Internal ==============
     /// ====================================

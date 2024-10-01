@@ -40,7 +40,7 @@ jobs:
         id: build
 
       - name: Set SEPOLIA_RPC_URL Environment Variable
-        run: echo "SEPOLIA_RPC_URL=https://rpc.sepolia.dev" >> $GITHUB_ENV
+        run: echo "SEPOLIA_RPC_URL=https://rpc.sepolia.org" >> $GITHUB_ENV
       
       - name: Run Forge tests
         run: |

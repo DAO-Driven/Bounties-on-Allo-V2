@@ -195,7 +195,7 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
     mapping(address => uint256) private _suplierPower;
 
     /// @notice Mapping of recipient addresses to their offered milestones.
-    mapping(address => OfferedRecipient) offeredRecipient;
+    mapping(address => OfferedRecipient) public offeredRecipient;
 
     /// @notice Struct holding information about project rejection voting.
     RejectProject projectReject;
@@ -405,7 +405,9 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
         if (msg.sender == creator) {
             if (_status == Status.Accepted) {
                 allo.registerRecipient(poolId, encodedRecipientParams);
+                _dropRecipientsVotes(_recipient);
             } else if (_status == Status.Rejected) {
+                _dropRecipientsVotes(_recipient);
                 _removeRecipient(_recipient);
             }
         } else {
@@ -425,22 +427,27 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
 
                 if (offeredRecipient[_recipient].votesFor > threshold) {
                     allo.registerRecipient(poolId, encodedRecipientParams);
+                    _dropRecipientsVotes(_recipient);
                 }
             } else if (_status == Status.Rejected) {
                 offeredRecipient[_recipient].votesAgainst += managerVotingPower;
 
                 if (offeredRecipient[_recipient].votesAgainst > threshold) {
+                    _dropRecipientsVotes(_recipient);
                     _removeRecipient(_recipient);
                 }
             }
         }
     }
 
-    function _removeRecipient(address _recipient) internal {
+    function _dropRecipientsVotes(address _recipient) internal {
         for (uint256 i = 0; i < _suppliersStore.length; i++) {
             offeredRecipient[_recipient].managersVotes[_suppliersStore[i]] = 0;
         }
         delete offeredRecipient[_recipient];
+    }
+
+    function _removeRecipient(address _recipient) internal {
         delete _recipients[_recipient];
     }
 

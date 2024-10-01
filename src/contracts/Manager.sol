@@ -340,7 +340,7 @@ contract Manager is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeabl
                 "Insufficient token balance in contract"
             );
 
-            token.approve(address(allo), _amount);
+            token.approve(address(allo), projects[_projectId].projectSupply.need);
 
             allo.fundPool(pool, projects[_projectId].projectSupply.need);
 

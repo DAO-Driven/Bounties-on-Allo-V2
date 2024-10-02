@@ -25,7 +25,7 @@ contract ExecutorSupplierVotingStrategyTest is Test {
     StrategyFactory strategyFactory;
     address hatsContractAddress = 0x3bc1A0Ad72417f2d411118085256fC53CBdDd137;
     uint256 managerHatID = 0x0000005200010000000000000000000000000000000000000000000000000000;
-    
+
     bytes32 profileId;
     MockERC20 projectToken;
 
@@ -67,7 +67,6 @@ contract ExecutorSupplierVotingStrategyTest is Test {
             "ExecutorSupplierVotingStrategyTest",
             Metadata({protocol: 1, pointer: ""})
         );
-
     }
 
     function test_UnAuthorizedReviewRecipient() external {
@@ -118,7 +117,6 @@ contract ExecutorSupplierVotingStrategyTest is Test {
     }
 
     function test_ReviewRecipientByProfileManager() external {
-
         vm.startPrank(projectManager2);
 
         projectToken.approve(address(manager), 100e18);
@@ -141,7 +139,6 @@ contract ExecutorSupplierVotingStrategyTest is Test {
     }
 
     function test_RevertDuplicatedReviewRecipientByMultipleProfileManagers() external {
-
         vm.startPrank(projectManager2);
 
         projectToken.approve(address(manager), 100e18);

@@ -71,6 +71,7 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
         address hatsContractAddress; // Address of the Hats contract.
         uint8 thresholdPercentage;
         address creator;
+        uint256 maxRecipients;
     }
 
     /// @notice Struct to represent the offered milestones along with their voting status.
@@ -155,6 +156,8 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
     StrategyState public state;
 
     address public creator;
+    uint256 public registeredRecipients;
+    uint256 public maxRecipientsAmount;
 
     /// @notice Stores the ID of the Supplier Hat.
     uint256 public supplierHat;
@@ -248,6 +251,7 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
         thresholdPercentage = _initData.thresholdPercentage;
         hatsContract = IHats(_initData.hatsContractAddress);
         creator = _initData.creator;
+        maxRecipientsAmount = _initData.maxRecipients;
 
         SupplierPower[] memory supliersPower = _initData.projectSuppliers;
 
@@ -391,6 +395,10 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
     /// ===============================
 
     function reviewRecipient(address _recipient, Status _status) external {
+        if (_status == Status.Accepted && registeredRecipients >= maxRecipientsAmount) {
+            revert MAX_RECIPIENTS_AMOUNT_REACHED();
+        }
+
         if (_recipients[_recipient].recipientStatus == Status.Accepted && _status == Status.Accepted) {
             revert RECIPIENT_ALREADY_ACCEPTED();
         }
@@ -449,6 +457,7 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
 
     function _removeRecipient(address _recipient) internal {
         delete _recipients[_recipient];
+        registeredRecipients--;
     }
 
     /// @notice Offers milestones to a specific recipient.
@@ -795,7 +804,7 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
 
         // Add the recipient to the accepted recipient ids mapping
         _recipients[recipientId] = recipient;
-
+        registeredRecipients++;
         // Emit event for the registration
         emit Registered(recipientId, _data, _sender);
     }

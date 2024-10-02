@@ -24,6 +24,8 @@ contract Errors {
     /// ====== Generic =======
     /// ======================
 
+    error MAX_RECIPIENTS_AMOUNT_REACHED();
+
     /// @notice Thrown as a general error when input / data is invalid
     error INVALID();
 

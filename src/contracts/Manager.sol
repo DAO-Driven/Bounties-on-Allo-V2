@@ -314,7 +314,8 @@ contract Manager is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeabl
                     projectSuppliers: suppliers,
                     hatsContractAddress: hatsContractAddress,
                     thresholdPercentage: thresholdPercentage,
-                    creator: projects[_projectId].creator
+                    creator: projects[_projectId].creator,
+                    maxRecipients: 1
                 })
             );
 

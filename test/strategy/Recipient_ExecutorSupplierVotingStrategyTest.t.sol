@@ -16,14 +16,17 @@ contract ExecutorSupplierVotingStrategyTest is Test {
     address mainHat = 0x01Ae8d6d0F137CF946e354eA707B698E8CaE6485;
     uint256 topHatId = 0x0000005200010000000000000000000000000000000000000000000000000000;
     address projectExecutor = address(0x456);
+    address projectExecutor2 = address(0x454);
     address projectManager1 = address(0x459);
     address projectManager2 = address(0x458);
     address projectManager3 = address(0x457);
+    address unAuthorized = address(0x455);
     ExecutorSupplierVotingStrategy strategy;
     StrategyFactory strategyFactory;
     address hatsContractAddress = 0x3bc1A0Ad72417f2d411118085256fC53CBdDd137;
     uint256 managerHatID = 0x0000005200010000000000000000000000000000000000000000000000000000;
-
+    
+    bytes32 profileId;
     MockERC20 projectToken;
 
     event ProjectRegistered(uint256 indexed profileId, uint256 nonce);
@@ -55,18 +58,37 @@ contract ExecutorSupplierVotingStrategyTest is Test {
 
         vm.prank(mainHat);
         hatsProtocol.transferHat(topHatId, mainHat, address(manager));
+
+        vm.prank(projectManager1);
+        profileId = manager.registerProject(
+            address(projectToken),
+            1e18,
+            777777,
+            "ExecutorSupplierVotingStrategyTest",
+            Metadata({protocol: 1, pointer: ""})
+        );
+
+    }
+
+    function test_UnAuthorizedReviewRecipient() external {
+        vm.startPrank(projectManager1);
+
+        projectToken.approve(address(manager), 100e18);
+        manager.supplyProject(profileId, 1e18);
+
+        vm.stopPrank();
+
+        address projectStrategy = manager.getProjectStrategy(profileId);
+        ExecutorSupplierVotingStrategy strategyContract = ExecutorSupplierVotingStrategy(payable(projectStrategy));
+
+        vm.expectRevert(Errors.SUPPLIER_HAT_WEARING_REQUIRED.selector);
+
+        vm.prank(unAuthorized);
+        strategyContract.reviewRecipient(projectExecutor, IStrategy.Status.Accepted);
     }
 
     function test_ReviewRecipientByProfileCreator() external {
         vm.startPrank(projectManager1);
-
-        bytes32 profileId = manager.registerProject(
-            address(projectToken),
-            1e18,
-            777777,
-            "test_createPoolWithCustomStrategy",
-            Metadata({protocol: 1, pointer: ""})
-        );
 
         projectToken.approve(address(manager), 100e18);
 
@@ -96,14 +118,6 @@ contract ExecutorSupplierVotingStrategyTest is Test {
     }
 
     function test_ReviewRecipientByProfileManager() external {
-        vm.prank(projectManager1);
-        bytes32 profileId = manager.registerProject(
-            address(projectToken),
-            1e18,
-            777777,
-            "test_createPoolWithCustomStrategy",
-            Metadata({protocol: 1, pointer: ""})
-        );
 
         vm.startPrank(projectManager2);
 
@@ -126,15 +140,7 @@ contract ExecutorSupplierVotingStrategyTest is Test {
         vm.stopPrank();
     }
 
-    function test_ReviewRecipientByMultipleProfileManagers() external {
-        vm.prank(projectManager1);
-        bytes32 profileId = manager.registerProject(
-            address(projectToken),
-            1e18,
-            777777,
-            "test_createPoolWithCustomStrategy",
-            Metadata({protocol: 1, pointer: ""})
-        );
+    function test_RevertDuplicatedReviewRecipientByMultipleProfileManagers() external {
 
         vm.startPrank(projectManager2);
 

@@ -288,13 +288,13 @@ contract Manager is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeabl
 
             managers[suppliers.length] = address(this);
 
-            _createAndMintHat(
-                "Manager",
-                managers,
-                "ipfs://bafkreiey2a5jtqvjl4ehk3jx7fh7edsjqmql6vqxdh47znsleetug44umy/",
-                _projectId,
-                HatType.Manager
-            );
+            // _createAndMintHat(
+            //     "Manager",
+            //     managers,
+            //     "ipfs://bafkreiey2a5jtqvjl4ehk3jx7fh7edsjqmql6vqxdh47znsleetug44umy/",
+            //     _projectId,
+            //     HatType.Manager
+            // );
 
             // address[] memory executorAddresses = new address[](1);
             // executorAddresses[0] = projectExecutor[_projectId];
@@ -307,19 +307,20 @@ contract Manager is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeabl
             //     false
             // );
 
+            projects[_projectId].projectStrategy = strategyFactory.createStrategy(strategy);
+
+            uint256 strategyHat =
+                _createAndMintStrategyHat("Strategy", projects[_projectId].projectStrategy, "strategyImage");
+
             bytes memory encodedInitData = abi.encode(
                 ExecutorSupplierVotingStrategy.InitializeData({
-                    supplierHat: projects[_projectId].projectHats.supplierHat,
-                    executorHat: projects[_projectId].projectHats.supplierHat,
+                    strategyHat: strategyHat,
                     projectSuppliers: suppliers,
                     hatsContractAddress: hatsContractAddress,
-                    thresholdPercentage: thresholdPercentage,
                     creator: projects[_projectId].creator,
                     maxRecipients: 1
                 })
             );
-
-            projects[_projectId].projectStrategy = strategyFactory.createStrategy(strategy);
 
             uint256 pool = allo.createPoolWithCustomStrategy(
                 _projectId,
@@ -344,15 +345,6 @@ contract Manager is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeabl
             token.approve(address(allo), projects[_projectId].projectSupply.need);
 
             allo.fundPool(pool, projects[_projectId].projectSupply.need);
-
-            // bytes memory encodedRecipientParams = abi.encode(
-            //     projectExecutor[_projectId],
-            //     0x0000000000000000000000000000000000000000,
-            //     projectSupply[_projectId].need,
-            //     Metadata({protocol: 1, pointer: "executor"})
-            // );
-
-            // allo.registerRecipient(pool, encodedRecipientParams);
 
             projects[_projectId].projectPool = pool;
 
@@ -429,39 +421,19 @@ contract Manager is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeabl
         return profile.owner != address(0);
     }
 
-    /**
-     * @notice Creates and mints a new hat in the Hats contract.
-     * @dev Mints the newly created hat to the specified wearers. Updates the project's hat information based on the type of hat.
-     * @param _hatName The name of the hat to create.
-     * @param _hatWearers An array of addresses to whom the hat will be minted.
-     * @param _imageURI The URI of the hat's image.
-     * @param _projectId The ID of the project associated with the hat.
-     * @param _hatType A hat type.
-     */
-    function _createAndMintHat(
-        string memory _hatName,
-        address[] memory _hatWearers,
-        string memory _imageURI,
-        bytes32 _projectId,
-        HatType _hatType
-    ) private {
-        uint256 hat = hatsContract.createHat(
-            managerHatID, _hatName, uint32(_hatWearers.length), address(this), address(this), true, _imageURI
-        );
+    function _createAndMintStrategyHat(string memory _hatName, address _hatWearer, string memory _imageURI)
+        private
+        returns (uint256 hatId)
+    {
+        hatId = hatsContract.createHat(managerHatID, _hatName, 1, address(this), address(this), true, _imageURI);
 
-        for (uint256 i = 0; i < _hatWearers.length; i++) {
-            bool isEligible = hatsContract.isEligible(_hatWearers[i], hat);
+        bool isEligible = hatsContract.isEligible(_hatWearer, hatId);
 
-            if (isEligible) {
-                hatsContract.mintHat(hat, _hatWearers[i]);
-            }
-        }
+        require(isEligible, "Wearer not eligible");
 
-        if (_hatType == HatType.Manager) {
-            projects[_projectId].projectHats.supplierHat = hat;
-        } else if (_hatType == HatType.Executor) {
-            projects[_projectId].projectHats.executorHat = hat;
-        }
+        hatsContract.mintHat(hatId, _hatWearer);
+
+        return hatId;
     }
 
     /// @notice Transfer an amount of a token to an address

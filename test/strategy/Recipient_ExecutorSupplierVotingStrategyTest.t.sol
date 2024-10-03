@@ -105,7 +105,7 @@ contract ExecutorSupplierVotingStrategyTest is Test {
 
         strategyContract.reviewRecipient(projectExecutor, IStrategy.Status.Rejected);
 
-        strategyContract.reviewRecipient(projectExecutor, IStrategy.Status.Accepted);
+        strategyContract.reviewRecipient(projectExecutor2, IStrategy.Status.Accepted);
 
         vm.stopPrank();
     }

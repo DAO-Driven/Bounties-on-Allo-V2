@@ -65,13 +65,11 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
 
     /// @notice Struct to hold the initialization parameters for the strategy.
     struct InitializeData {
-        uint256 supplierHat; // ID of the Supplier Hat.
-        uint256 executorHat; // ID of the Executor Hat.
+        uint256 strategyHat; // ID of the Supplier Hat.
         SupplierPower[] projectSuppliers; // Array of SupplierPower, representing the power of each supplier.
         address hatsContractAddress; // Address of the Hats contract.
-        uint8 thresholdPercentage;
         address creator;
-        uint256 maxRecipients;
+        uint32 maxRecipients;
     }
 
     /// @notice Struct to represent the offered milestones along with their voting status.
@@ -157,7 +155,9 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
 
     address public creator;
     uint256 public registeredRecipients;
-    uint256 public maxRecipientsAmount;
+    uint32 public maxRecipientsAmount;
+
+    uint256 public strategyHat;
 
     /// @notice Stores the ID of the Supplier Hat.
     uint256 public supplierHat;
@@ -246,9 +246,8 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
         __BaseStrategy_init(_poolId);
 
         // Set the strategy specific variables
-        supplierHat = _initData.supplierHat;
-        executorHat = _initData.executorHat;
-        thresholdPercentage = _initData.thresholdPercentage;
+        strategyHat = _initData.strategyHat;
+        thresholdPercentage = 77;
         hatsContract = IHats(_initData.hatsContractAddress);
         creator = _initData.creator;
         maxRecipientsAmount = _initData.maxRecipients;
@@ -276,6 +275,12 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
         _setPoolActive(true);
 
         state = StrategyState.Active;
+
+        _createAndMintManagerHat(
+            "Manager", supliersPower, "ipfs://bafkreiey2a5jtqvjl4ehk3jx7fh7edsjqmql6vqxdh47znsleetug44umy/"
+        );
+
+        _createRecipientHat("Recipient", "ipfs://bafkreih7hjg4ehf4lqdoqstlkjxvjy7zfnza4keh2knohsle3ikjja3g2i/");
     }
 
     /// ===============================
@@ -398,7 +403,6 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
         if (_status == Status.Accepted && registeredRecipients >= maxRecipientsAmount) {
             revert MAX_RECIPIENTS_AMOUNT_REACHED();
         }
-
         if (_recipients[_recipient].recipientStatus == Status.Accepted && _status == Status.Accepted) {
             revert RECIPIENT_ALREADY_ACCEPTED();
         }
@@ -414,6 +418,8 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
             if (_status == Status.Accepted) {
                 allo.registerRecipient(poolId, encodedRecipientParams);
                 _dropRecipientsVotes(_recipient);
+
+                hatsContract.mintHat(executorHat, _recipient);
             } else if (_status == Status.Rejected) {
                 _dropRecipientsVotes(_recipient);
                 _removeRecipient(_recipient);
@@ -436,6 +442,8 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
                 if (offeredRecipient[_recipient].votesFor > threshold) {
                     allo.registerRecipient(poolId, encodedRecipientParams);
                     _dropRecipientsVotes(_recipient);
+
+                    hatsContract.mintHat(executorHat, _recipient);
                 }
             } else if (_status == Status.Rejected) {
                 offeredRecipient[_recipient].votesAgainst += managerVotingPower;
@@ -458,6 +466,7 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
     function _removeRecipient(address _recipient) internal {
         delete _recipients[_recipient];
         registeredRecipients--;
+        hatsContract.setHatWearerStatus(executorHat, _recipient, false, false);
     }
 
     /// @notice Offers milestones to a specific recipient.
@@ -979,6 +988,34 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
         allo.allocate(poolId, encodedAllocateParams);
 
         emit MilestonesSet(_recipientId, milestonesLength);
+    }
+
+    function _createAndMintManagerHat(
+        string memory _hatName,
+        SupplierPower[] memory _hatWearers,
+        string memory _imageURI
+    ) private {
+        uint256 hat = hatsContract.createHat(
+            strategyHat, _hatName, uint32(_hatWearers.length), address(this), address(this), true, _imageURI
+        );
+
+        for (uint256 i = 0; i < _hatWearers.length; i++) {
+            bool isEligible = hatsContract.isEligible(_hatWearers[i].supplierId, hat);
+
+            if (isEligible) {
+                hatsContract.mintHat(hat, _hatWearers[i].supplierId);
+            }
+        }
+
+        supplierHat = hat;
+    }
+
+    function _createRecipientHat(string memory _hatName, string memory _imageURI) private returns (uint256 hatId) {
+        hatId = hatsContract.createHat(
+            supplierHat, _hatName, maxRecipientsAmount, address(this), address(this), true, _imageURI
+        );
+
+        executorHat = hatId;
     }
 
     /// @notice This contract should be able to receive native token

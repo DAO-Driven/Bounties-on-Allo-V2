@@ -234,11 +234,8 @@ contract Manager is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeabl
         bytes32 profileId = registry.createProfile(_nonce, _name, _metadata, address(this), members);
 
         projects[profileId].token = _token;
-        // projects[profileId].projectExecutor = _recipient;
         projects[profileId].projectSupply.need = allo.getPercentFee() + _needs;
         projects[profileId].creator = msg.sender;
-        // projectSupply[profileId].need += allo.getPercentFee() + _needs;
-        // projectExecutor[profileId] = _recipient;
 
         emit ProjectRegistered(profileId, _nonce);
 
@@ -364,7 +361,7 @@ contract Manager is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeabl
 
         projects[_projectId].projectSuppliers = updatedSuppliers;
 
-        _transferAmount(projects[_projectId].token, msg.sender, amount);
+        SafeTransferLib.safeTransfer(projects[_projectId].token, msg.sender, amount);
     }
 
     /**
@@ -415,14 +412,6 @@ contract Manager is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeabl
         hatsContract.mintHat(hatId, _hatWearer);
 
         return hatId;
-    }
-
-    /// @notice Transfer an amount of a token to an address
-    /// @param _token The token to transfer
-    /// @param _to The address to transfer to
-    /// @param _amount The amount to transfer
-    function _transferAmount(address _token, address _to, uint256 _amount) internal {
-        SafeTransferLib.safeTransfer(_token, _to, _amount);
     }
 
     // function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}

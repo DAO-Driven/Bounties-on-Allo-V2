@@ -288,25 +288,6 @@ contract Manager is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeabl
 
             managers[suppliers.length] = address(this);
 
-            // _createAndMintHat(
-            //     "Manager",
-            //     managers,
-            //     "ipfs://bafkreiey2a5jtqvjl4ehk3jx7fh7edsjqmql6vqxdh47znsleetug44umy/",
-            //     _projectId,
-            //     HatType.Manager
-            // );
-
-            // address[] memory executorAddresses = new address[](1);
-            // executorAddresses[0] = projectExecutor[_projectId];
-
-            // _createAndMintHat(
-            //     "Recipient",
-            //     executorAddresses,
-            //     "ipfs://bafkreih7hjg4ehf4lqdoqstlkjxvjy7zfnza4keh2knohsle3ikjja3g2i/",
-            //     _projectId,
-            //     false
-            // );
-
             projects[_projectId].projectStrategy = strategyFactory.createStrategy(strategy);
 
             uint256 strategyHat =
@@ -441,11 +422,7 @@ contract Manager is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeabl
     /// @param _to The address to transfer to
     /// @param _amount The amount to transfer
     function _transferAmount(address _token, address _to, uint256 _amount) internal {
-        // if (_token == NATIVE) {
-        //     SafeTransferLib.safeTransferETH(_to, _amount);
-        // } else {
         SafeTransferLib.safeTransfer(_token, _to, _amount);
-        // }
     }
 
     // function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}

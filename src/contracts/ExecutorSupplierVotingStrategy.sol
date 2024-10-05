@@ -528,7 +528,6 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
     }
 
     function _reviewOfferedtMilestones(address _recipientId, Status _status, uint256 _votingPower) internal {
-
         uint256 threshold = totalSupply * thresholdPercentage / 100;
 
         if (_status == Status.Accepted) {
@@ -908,7 +907,6 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
         bytes memory encodedAllocateParams = abi.encode(_recipientId, Status.Accepted, amount);
         allo.allocate(poolId, encodedAllocateParams);
 
-
         // Get the pool, subtract the amount and transfer to the recipient
         IAllo.Pool memory pool = allo.getPool(poolId);
 
@@ -988,7 +986,6 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
         if (totalAmountPercentage != 1e18) {
             revert INVALID_MILESTONES_PERCENTAGE();
         }
-
 
         // bytes memory encodedAllocateParams = abi.encode(_recipientId, Status.Accepted, totalSupply);
         // allo.allocate(poolId, encodedAllocateParams);

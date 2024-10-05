@@ -231,8 +231,9 @@ contract Manager is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeabl
         projects[profileId].token = _token;
         projects[profileId].supply.need = allo.getPercentFee() + _needs;
         projects[profileId].projectType = _type;
-        if (_type == ProjectType.CrowdFunding)
+        if (_type == ProjectType.CrowdFunding) {
             projects[profileId].executor = msg.sender;
+        }
 
         emit ProjectRegistered(profileId, _nonce);
 
@@ -258,8 +259,10 @@ contract Manager is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeabl
 
         if (projects[_projectId].poolId != 0) revert PROJECT_HAS_POOL();
 
-        if (projects[_projectId].executor == msg.sender && projects[_projectId].projectType == ProjectType.CrowdFunding) 
+        if (projects[_projectId].executor == msg.sender && projects[_projectId].projectType == ProjectType.CrowdFunding)
+        {
             revert EXECUTOR_IS_NOT_ALLOWED_TO_SUPPLY();
+        }
 
         SafeTransferLib.safeTransferFrom(projects[_projectId].token, address(msg.sender), address(this), _amount);
 
@@ -280,11 +283,10 @@ contract Manager is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeabl
             for (uint256 i = 0; i < suppliers.length; i++) {
                 managers[i] = (suppliers[i].supplierId);
             }
-            
+
             projects[_projectId].strategy = strategyFactory.createStrategy(strategy);
 
-            uint256 strategyHat =
-                _createAndMintStrategyHat("Strategy", projects[_projectId].strategy, "strategyImage");
+            uint256 strategyHat = _createAndMintStrategyHat("Strategy", projects[_projectId].strategy, "strategyImage");
 
             bytes memory encodedInitData = abi.encode(
                 ExecutorSupplierVotingStrategy.InitializeData({

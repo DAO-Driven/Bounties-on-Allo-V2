@@ -41,13 +41,18 @@ contract ManagerTest is Test {
 
     function test_registerProjectWithoutPool() external {
         manager.registerProject(
-            address(projectToken), 1e18, 777777, "Test Project", Metadata({protocol: 1, pointer: ""})
+            Manager.ProjectType.Bounty, address(projectToken), 1e18, 777777, "Test Project", Metadata({protocol: 1, pointer: ""})
         );
     }
 
     function test_supplyProject() external {
         bytes32 profileId = manager.registerProject(
-            address(projectToken), 1e18, 777777, "test_supplyProject Project", Metadata({protocol: 1, pointer: ""})
+            Manager.ProjectType.Bounty, 
+            address(projectToken), 
+            1e18, 
+            777777, 
+            "test_supplyProject Project", 
+            Metadata({protocol: 1, pointer: ""})
         );
 
         vm.startPrank(projectManager1);
@@ -68,6 +73,7 @@ contract ManagerTest is Test {
 
     function test_supplyProjectAndRevokeSupply() external {
         bytes32 profileId = manager.registerProject(
+            Manager.ProjectType.Bounty,
             address(projectToken),
             1e18,
             777777,

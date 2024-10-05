@@ -33,6 +33,7 @@ contract Manager is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeabl
         ProjectSupply supply;
         uint256 poolId;
         address strategy;
+        ProjectType projectType;
     }
 
     /// @notice Interface to interact with the Registry contract.
@@ -214,6 +215,7 @@ contract Manager is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeabl
     /// @param _name The name of the project.
     /// @param _metadata Metadata associated with the project.
     function registerProject(
+        ProjectType _type,
         address _token,
         uint256 _needs,
         uint256 _nonce,
@@ -228,6 +230,9 @@ contract Manager is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeabl
 
         projects[profileId].token = _token;
         projects[profileId].supply.need = allo.getPercentFee() + _needs;
+        projects[profileId].projectType = _type;
+        if (_type == ProjectType.CrowdFunding)
+            projects[profileId].executor = msg.sender;
 
         emit ProjectRegistered(profileId, _nonce);
 
@@ -253,7 +258,8 @@ contract Manager is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeabl
 
         if (projects[_projectId].poolId != 0) revert PROJECT_HAS_POOL();
 
-        // if (projects[_projectId].executor == msg.sender) revert EXECUTOR_IS_NOT_ALLOWED_TO_SUPPLY();
+        if (projects[_projectId].executor == msg.sender && projects[_projectId].projectType == ProjectType.CrowdFunding) 
+            revert EXECUTOR_IS_NOT_ALLOWED_TO_SUPPLY();
 
         SafeTransferLib.safeTransferFrom(projects[_projectId].token, address(msg.sender), address(this), _amount);
 
@@ -269,14 +275,12 @@ contract Manager is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeabl
 
         if (projects[_projectId].supply.has >= projects[_projectId].supply.need) {
             ExecutorSupplierVotingStrategy.SupplierPower[] memory suppliers = _extractSupliers(_projectId);
-            address[] memory managers = new address[](suppliers.length + 1);
+            address[] memory managers = new address[](suppliers.length);
 
             for (uint256 i = 0; i < suppliers.length; i++) {
                 managers[i] = (suppliers[i].supplierId);
             }
-
-            managers[suppliers.length] = address(this);
-
+            
             projects[_projectId].strategy = strategyFactory.createStrategy(strategy);
 
             uint256 strategyHat =

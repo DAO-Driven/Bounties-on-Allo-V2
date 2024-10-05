@@ -59,6 +59,7 @@ contract TestSetUpWithProfileId is Test {
 
         vm.prank(projectManager1);
         profileId = manager.registerProject(
+            Manager.ProjectType.Bounty,
             address(projectToken),
             1e18,
             777777,

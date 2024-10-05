@@ -426,10 +426,10 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
             offeredRecipient[_recipient].votesFor += managerVotingPower;
 
             if (offeredRecipient[_recipient].votesFor > threshold) {
+                hatsContract.mintHat(executorHat, _recipient);
+
                 allo.registerRecipient(poolId, encodedRecipientParams);
                 _dropRecipientsVotes(_recipient);
-
-                hatsContract.mintHat(executorHat, _recipient);
             }
         } else if (_status == Status.Rejected) {
             offeredRecipient[_recipient].votesAgainst += managerVotingPower;
@@ -460,14 +460,14 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
     /// @dev Requires the sender to be wearing the executor hat and to be either the recipient or a member of the recipient's profile.
     /// Emits a MilestonesOffered event upon successful offering of milestones.
     function offerMilestones(address _recipientId, Milestone[] memory _milestones) external {
-        if (!hatsContract.isWearerOfHat(msg.sender, executorHat)) {
-            revert EXECUTOR_HAT_WEARING_REQUIRED();
+        if (!hatsContract.isWearerOfHat(msg.sender, supplierHat)) {
+            revert SUPPLIER_HAT_WEARING_REQUIRED();
         }
 
-        bool isRecipientCreator = (msg.sender == _recipientId) || _isProfileMember(_recipientId, msg.sender);
-        if (!isRecipientCreator) {
-            revert UNAUTHORIZED();
-        }
+        // bool isRecipientCreator = _isProfileMember(_recipientId, msg.sender);
+        // if (!isRecipientCreator) {
+        //     revert UNAUTHORIZED();
+        // }
 
         Recipient storage recipient = _recipients[_recipientId];
 
@@ -481,11 +481,21 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
             revert MILESTONES_ALREADY_SET();
         }
 
+        if (offeredMilestones[_recipientId].suppliersVotes[msg.sender] > 0) {
+            revert ALREADY_REVIEWED();
+        }
+
         _resetOfferedMilestones(_recipientId);
 
         for (uint256 i = 0; i < _milestones.length; i++) {
             offeredMilestones[_recipientId].milestones.push(_milestones[i]);
         }
+
+        uint256 managerVotingPower = _suplierPower[msg.sender];
+
+        offeredMilestones[_recipientId].suppliersVotes[msg.sender] = managerVotingPower;
+
+        _reviewOfferedtMilestones(_recipientId, Status.Accepted, managerVotingPower);
 
         emit MilestonesOffered(_recipientId, _milestones.length);
     }
@@ -511,12 +521,18 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
         }
 
         uint256 managerVotingPower = _suplierPower[msg.sender];
-        uint256 threshold = totalSupply * thresholdPercentage / 100;
 
         offeredMilestones[_recipientId].suppliersVotes[msg.sender] = managerVotingPower;
 
+        _reviewOfferedtMilestones(_recipientId, _status, managerVotingPower);
+    }
+
+    function _reviewOfferedtMilestones(address _recipientId, Status _status, uint256 _votingPower) internal {
+
+        uint256 threshold = totalSupply * thresholdPercentage / 100;
+
         if (_status == Status.Accepted) {
-            offeredMilestones[_recipientId].votesFor += managerVotingPower;
+            offeredMilestones[_recipientId].votesFor += _votingPower;
 
             if (offeredMilestones[_recipientId].votesFor > threshold) {
                 _recipients[_recipientId].milestonesReviewStatus = _status;
@@ -524,7 +540,7 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
                 emit OfferedMilestonesAccepted(_recipientId);
             }
         } else if (_status == Status.Rejected) {
-            offeredMilestones[_recipientId].votesAgainst += managerVotingPower;
+            offeredMilestones[_recipientId].votesAgainst += _votingPower;
 
             if (offeredMilestones[_recipientId].votesAgainst > threshold) {
                 _recipients[_recipientId].milestonesReviewStatus = _status;
@@ -888,6 +904,11 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
         // Calculate the amount to be distributed for the milestone
         uint256 amount = recipient.grantAmount * milestone.amountPercentage / 1e18;
 
+        // TODO: check this way
+        bytes memory encodedAllocateParams = abi.encode(_recipientId, Status.Accepted, amount);
+        allo.allocate(poolId, encodedAllocateParams);
+
+
         // Get the pool, subtract the amount and transfer to the recipient
         IAllo.Pool memory pool = allo.getPool(poolId);
 
@@ -968,9 +989,9 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
             revert INVALID_MILESTONES_PERCENTAGE();
         }
 
-        bytes memory encodedAllocateParams = abi.encode(_recipientId, Status.Accepted, totalSupply);
 
-        allo.allocate(poolId, encodedAllocateParams);
+        // bytes memory encodedAllocateParams = abi.encode(_recipientId, Status.Accepted, totalSupply);
+        // allo.allocate(poolId, encodedAllocateParams);
 
         emit MilestonesSet(_recipientId, milestonesLength);
     }

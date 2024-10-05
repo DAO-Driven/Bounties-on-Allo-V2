@@ -31,7 +31,7 @@ contract ExecutorSupplierVotingStrategy_OfferMilestonesTest is TestSetUpWithProf
 
         ExecutorSupplierVotingStrategy.Milestone[] memory milestones = getMilestones();
 
-        vm.expectRevert(Errors.EXECUTOR_HAT_WEARING_REQUIRED.selector);
+        vm.expectRevert(Errors.SUPPLIER_HAT_WEARING_REQUIRED.selector);
 
         vm.prank(unAuthorized);
         strategyContract.offerMilestones(projectExecutor, milestones);
@@ -43,18 +43,16 @@ contract ExecutorSupplierVotingStrategy_OfferMilestonesTest is TestSetUpWithProf
         projectToken.approve(address(manager), 100e18);
         manager.supplyProject(profileId, 1e18);
 
-        vm.stopPrank();
-
         address projectStrategy = manager.getProjectStrategy(profileId);
         ExecutorSupplierVotingStrategy strategyContract = ExecutorSupplierVotingStrategy(payable(projectStrategy));
 
-        vm.prank(projectManager1);
         strategyContract.reviewRecipient(projectExecutor, IStrategy.Status.Accepted);
 
         ExecutorSupplierVotingStrategy.Milestone[] memory milestones = getMilestones();
 
-        vm.prank(projectExecutor);
         strategyContract.offerMilestones(projectExecutor, milestones);
+
+        vm.stopPrank();
     }
 
     function getMilestones() public pure returns (ExecutorSupplierVotingStrategy.Milestone[] memory milestones) {
@@ -65,14 +63,14 @@ contract ExecutorSupplierVotingStrategy_OfferMilestonesTest is TestSetUpWithProf
         milestones[0] = ExecutorSupplierVotingStrategy.Milestone({
             amountPercentage: 0.5 ether,
             metadata: metadata,
-            milestoneStatus: IStrategy.Status.Pending, // Assuming 0 corresponds to Pending status
+            milestoneStatus: IStrategy.Status.None, // Assuming 0 corresponds to Pending status
             description: "I will do my best"
         });
 
         milestones[1] = ExecutorSupplierVotingStrategy.Milestone({
             amountPercentage: 0.5 ether,
             metadata: metadata,
-            milestoneStatus: IStrategy.Status.Pending,
+            milestoneStatus: IStrategy.Status.None,
             description: "I will do my best"
         });
     }

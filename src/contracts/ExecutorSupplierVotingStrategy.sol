@@ -68,7 +68,6 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
         uint256 strategyHat; // ID of the Supplier Hat.
         SupplierPower[] projectSuppliers; // Array of SupplierPower, representing the power of each supplier.
         address hatsContractAddress; // Address of the Hats contract.
-        address creator;
         uint32 maxRecipients;
     }
 
@@ -153,7 +152,6 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
     /// @notice Holds the current state of the strategy.
     StrategyState public state;
 
-    address public creator;
     uint256 public registeredRecipients;
     uint32 public maxRecipientsAmount;
 
@@ -249,7 +247,6 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
         strategyHat = _initData.strategyHat;
         thresholdPercentage = 77;
         hatsContract = IHats(_initData.hatsContractAddress);
-        creator = _initData.creator;
         maxRecipientsAmount = _initData.maxRecipients;
 
         SupplierPower[] memory supliersPower = _initData.projectSuppliers;
@@ -414,44 +411,32 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
             Metadata({protocol: 1, pointer: "executor"})
         );
 
-        if (msg.sender == creator) {
-            if (_status == Status.Accepted) {
+        if (!hatsContract.isWearerOfHat(msg.sender, supplierHat)) {
+            revert SUPPLIER_HAT_WEARING_REQUIRED();
+        } else if (offeredRecipient[_recipient].managersVotes[msg.sender] > 0) {
+            revert ALREADY_REVIEWED();
+        }
+
+        uint256 managerVotingPower = _suplierPower[msg.sender];
+        uint256 threshold = totalSupply * thresholdPercentage / 100;
+
+        offeredRecipient[_recipient].managersVotes[msg.sender] = managerVotingPower;
+
+        if (_status == Status.Accepted) {
+            offeredRecipient[_recipient].votesFor += managerVotingPower;
+
+            if (offeredRecipient[_recipient].votesFor > threshold) {
                 allo.registerRecipient(poolId, encodedRecipientParams);
                 _dropRecipientsVotes(_recipient);
 
                 hatsContract.mintHat(executorHat, _recipient);
-            } else if (_status == Status.Rejected) {
+            }
+        } else if (_status == Status.Rejected) {
+            offeredRecipient[_recipient].votesAgainst += managerVotingPower;
+
+            if (offeredRecipient[_recipient].votesAgainst > threshold) {
                 _dropRecipientsVotes(_recipient);
                 _removeRecipient(_recipient);
-            }
-        } else {
-            if (!hatsContract.isWearerOfHat(msg.sender, supplierHat)) {
-                revert SUPPLIER_HAT_WEARING_REQUIRED();
-            } else if (offeredRecipient[_recipient].managersVotes[msg.sender] > 0) {
-                revert ALREADY_REVIEWED();
-            }
-
-            uint256 managerVotingPower = _suplierPower[msg.sender];
-            uint256 threshold = totalSupply * thresholdPercentage / 100;
-
-            offeredRecipient[_recipient].managersVotes[msg.sender] = managerVotingPower;
-
-            if (_status == Status.Accepted) {
-                offeredRecipient[_recipient].votesFor += managerVotingPower;
-
-                if (offeredRecipient[_recipient].votesFor > threshold) {
-                    allo.registerRecipient(poolId, encodedRecipientParams);
-                    _dropRecipientsVotes(_recipient);
-
-                    hatsContract.mintHat(executorHat, _recipient);
-                }
-            } else if (_status == Status.Rejected) {
-                offeredRecipient[_recipient].votesAgainst += managerVotingPower;
-
-                if (offeredRecipient[_recipient].votesAgainst > threshold) {
-                    _dropRecipientsVotes(_recipient);
-                    _removeRecipient(_recipient);
-                }
             }
         }
     }

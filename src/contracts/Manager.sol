@@ -18,23 +18,21 @@ import "../../lib/openzeppelin-contracts-upgradeable/contracts/access/OwnableUpg
 import "../../lib/openzeppelin-contracts-upgradeable/contracts/utils/ReentrancyGuardUpgradeable.sol";
 
 contract Manager is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeable, Errors {
-    enum HatType {
+    enum ProjectType {
         None,
-        Manager,
-        Executor
+        Bounty,
+        CrowdFunding
     }
 
     /// @notice Struct containing all information relevant to a project.
     struct ProjectInformation {
         address token;
-        address projectExecutor;
-        address[] projectSuppliers;
-        SuppliersById projectSuppliersById;
-        ProjectSupply projectSupply;
-        uint256 projectPool;
-        address projectStrategy;
-        Hats projectHats;
-        address creator;
+        address executor;
+        address[] suppliers;
+        SuppliersById suppliersById;
+        ProjectSupply supply;
+        uint256 poolId;
+        address strategy;
     }
 
     /// @notice Interface to interact with the Registry contract.
@@ -66,11 +64,6 @@ contract Manager is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeabl
     /// ================================
 
     mapping(bytes32 => ProjectInformation) projects;
-
-    // TODO: delete all this since it is:  mapping (bytes32 => ProjectInformation) projects;
-
-    /// @notice Mapping from project ID to the address of its executor.
-    mapping(bytes32 => address) projectExecutor;
 
     bool private initialized;
 
@@ -127,14 +120,14 @@ contract Manager is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeabl
     /// @param _projectId The ID of the project.
     /// @return uint256 The pool ID of the specified project.
     function getProjectPool(bytes32 _projectId) public view returns (uint256) {
-        return projects[_projectId].projectPool;
+        return projects[_projectId].poolId;
     }
 
     /// @notice Retrieves a list of supplier addresses for a project.
     /// @param _projectId The ID of the project.
     /// @return address[] An array of addresses of the suppliers for the specified project.
     function getProjectSuppliers(bytes32 _projectId) public view returns (address[] memory) {
-        return projects[_projectId].projectSuppliers;
+        return projects[_projectId].suppliers;
     }
 
     /// @notice Retrieves the supply amount provided by a specific supplier for a project.
@@ -142,21 +135,21 @@ contract Manager is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeabl
     /// @param _supplier The address of the supplier.
     /// @return uint256 The amount supplied by the specified supplier for the project.
     function getProjectSupplierById(bytes32 _projectId, address _supplier) public view returns (uint256) {
-        return projects[_projectId].projectSuppliersById.supplyById[_supplier];
+        return projects[_projectId].suppliersById.supplyById[_supplier];
     }
 
     /// @notice Retrieves the executor address for a project.
     /// @param _projectId The ID of the project.
     /// @return address The address of the executor for the specified project.
     function getProjectExecutor(bytes32 _projectId) public view returns (address) {
-        return projectExecutor[_projectId];
+        return projects[_projectId].executor;
     }
 
     /// @notice Retrieves the strategy address for a project.
     /// @param _projectId The ID of the project.
     /// @return address The address of the strategy associated with the specified project.
     function getProjectStrategy(bytes32 _projectId) public view returns (address) {
-        return projects[_projectId].projectStrategy;
+        return projects[_projectId].strategy;
     }
 
     /**
@@ -165,7 +158,7 @@ contract Manager is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeabl
      * @return ProjectSupply A struct containing the project's supply details, including total need and amount supplied.
      */
     function getProjectSupply(bytes32 _projectId) public view returns (ProjectSupply memory) {
-        return projects[_projectId].projectSupply;
+        return projects[_projectId].supply;
     }
 
     /// @notice Sets a new Allo contract address
@@ -234,8 +227,7 @@ contract Manager is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeabl
         bytes32 profileId = registry.createProfile(_nonce, _name, _metadata, address(this), members);
 
         projects[profileId].token = _token;
-        projects[profileId].projectSupply.need = allo.getPercentFee() + _needs;
-        projects[profileId].creator = msg.sender;
+        projects[profileId].supply.need = allo.getPercentFee() + _needs;
 
         emit ProjectRegistered(profileId, _nonce);
 
@@ -252,30 +244,30 @@ contract Manager is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeabl
      * @param _amount The amount of funds to supply.
      */
     function supplyProject(bytes32 _projectId, uint256 _amount) external payable nonReentrant {
-        if ((projects[_projectId].projectSupply.has + _amount) > projects[_projectId].projectSupply.need) {
+        if ((projects[_projectId].supply.has + _amount) > projects[_projectId].supply.need) {
             revert AMOUNT_IS_BIGGER_THAN_DECLARED_NEEDEDS();
         }
         require(_projectExists(_projectId), "Project does not exist");
 
-        if (_amount == 0 && _amount <= projects[_projectId].projectSupply.need) revert INVALID_AMOUNT();
+        if (_amount == 0 && _amount <= projects[_projectId].supply.need) revert INVALID_AMOUNT();
 
-        if (projects[_projectId].projectPool != 0) revert PROJECT_HAS_POOL();
+        if (projects[_projectId].poolId != 0) revert PROJECT_HAS_POOL();
 
-        if (projectExecutor[_projectId] == msg.sender) revert EXECUTOR_IS_NOT_ALLOWED_TO_SUPPLY();
+        // if (projects[_projectId].executor == msg.sender) revert EXECUTOR_IS_NOT_ALLOWED_TO_SUPPLY();
 
         SafeTransferLib.safeTransferFrom(projects[_projectId].token, address(msg.sender), address(this), _amount);
 
-        projects[_projectId].projectSupply.has += _amount;
+        projects[_projectId].supply.has += _amount;
 
-        if (projects[_projectId].projectSuppliersById.supplyById[msg.sender] == 0) {
-            projects[_projectId].projectSuppliers.push(msg.sender);
+        if (projects[_projectId].suppliersById.supplyById[msg.sender] == 0) {
+            projects[_projectId].suppliers.push(msg.sender);
         }
 
-        projects[_projectId].projectSuppliersById.supplyById[msg.sender] += _amount;
+        projects[_projectId].suppliersById.supplyById[msg.sender] += _amount;
 
         emit ProjectFunded(_projectId, _amount);
 
-        if (projects[_projectId].projectSupply.has >= projects[_projectId].projectSupply.need) {
+        if (projects[_projectId].supply.has >= projects[_projectId].supply.need) {
             ExecutorSupplierVotingStrategy.SupplierPower[] memory suppliers = _extractSupliers(_projectId);
             address[] memory managers = new address[](suppliers.length + 1);
 
@@ -285,24 +277,23 @@ contract Manager is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeabl
 
             managers[suppliers.length] = address(this);
 
-            projects[_projectId].projectStrategy = strategyFactory.createStrategy(strategy);
+            projects[_projectId].strategy = strategyFactory.createStrategy(strategy);
 
             uint256 strategyHat =
-                _createAndMintStrategyHat("Strategy", projects[_projectId].projectStrategy, "strategyImage");
+                _createAndMintStrategyHat("Strategy", projects[_projectId].strategy, "strategyImage");
 
             bytes memory encodedInitData = abi.encode(
                 ExecutorSupplierVotingStrategy.InitializeData({
                     strategyHat: strategyHat,
                     projectSuppliers: suppliers,
                     hatsContractAddress: hatsContractAddress,
-                    creator: projects[_projectId].creator,
                     maxRecipients: 1
                 })
             );
 
             uint256 pool = allo.createPoolWithCustomStrategy(
                 _projectId,
-                projects[_projectId].projectStrategy,
+                projects[_projectId].strategy,
                 encodedInitData,
                 projects[_projectId].token,
                 0,
@@ -316,15 +307,15 @@ contract Manager is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeabl
             IERC20 token = IERC20(projects[_projectId].token);
 
             require(
-                token.balanceOf(address(this)) >= projects[_projectId].projectSupply.need,
+                token.balanceOf(address(this)) >= projects[_projectId].supply.need,
                 "Insufficient token balance in contract"
             );
 
-            token.approve(address(allo), projects[_projectId].projectSupply.need);
+            token.approve(address(allo), projects[_projectId].supply.need);
 
-            allo.fundPool(pool, projects[_projectId].projectSupply.need);
+            allo.fundPool(pool, projects[_projectId].supply.need);
 
-            projects[_projectId].projectPool = pool;
+            projects[_projectId].poolId = pool;
 
             emit ProjectPoolCreated(_projectId, pool);
         }
@@ -340,26 +331,26 @@ contract Manager is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeabl
     function revokeProjectSupply(bytes32 _projectId) external nonReentrant {
         require(_projectExists(_projectId), "Project does not exist");
 
-        if (projects[_projectId].projectPool != 0) revert PROJECT_HAS_POOL();
+        if (projects[_projectId].poolId != 0) revert PROJECT_HAS_POOL();
 
-        uint256 amount = projects[_projectId].projectSuppliersById.supplyById[msg.sender];
+        uint256 amount = projects[_projectId].suppliersById.supplyById[msg.sender];
         require(amount > 0, "SUPPLY NOT FOUND");
 
-        delete projects[_projectId].projectSuppliersById.supplyById[msg.sender];
+        delete projects[_projectId].suppliersById.supplyById[msg.sender];
 
-        projects[_projectId].projectSupply.has -= amount;
+        projects[_projectId].supply.has -= amount;
 
-        address[] memory updatedSuppliers = new address[](projects[_projectId].projectSuppliers.length - 1);
+        address[] memory updatedSuppliers = new address[](projects[_projectId].suppliers.length - 1);
         uint256 j = 0;
 
-        for (uint256 i = 0; i < projects[_projectId].projectSuppliers.length; i++) {
-            if (projects[_projectId].projectSuppliers[i] != msg.sender) {
-                updatedSuppliers[j] = projects[_projectId].projectSuppliers[i];
+        for (uint256 i = 0; i < projects[_projectId].suppliers.length; i++) {
+            if (projects[_projectId].suppliers[i] != msg.sender) {
+                updatedSuppliers[j] = projects[_projectId].suppliers[i];
                 j++;
             }
         }
 
-        projects[_projectId].projectSuppliers = updatedSuppliers;
+        projects[_projectId].suppliers = updatedSuppliers;
 
         SafeTransferLib.safeTransfer(projects[_projectId].token, msg.sender, amount);
     }
@@ -376,11 +367,11 @@ contract Manager is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeabl
         returns (ExecutorSupplierVotingStrategy.SupplierPower[] memory)
     {
         ExecutorSupplierVotingStrategy.SupplierPower[] memory suppliersPower =
-            new ExecutorSupplierVotingStrategy.SupplierPower[](projects[_projectId].projectSuppliers.length);
+            new ExecutorSupplierVotingStrategy.SupplierPower[](projects[_projectId].suppliers.length);
 
-        for (uint256 i = 0; i < projects[_projectId].projectSuppliers.length; i++) {
-            address supplierId = projects[_projectId].projectSuppliers[i];
-            uint256 supplierPower = projects[_projectId].projectSuppliersById.supplyById[supplierId];
+        for (uint256 i = 0; i < projects[_projectId].suppliers.length; i++) {
+            address supplierId = projects[_projectId].suppliers[i];
+            uint256 supplierPower = projects[_projectId].suppliersById.supplyById[supplierId];
 
             suppliersPower[i] = ExecutorSupplierVotingStrategy.SupplierPower(supplierId, uint256(supplierPower));
         }

@@ -13,7 +13,6 @@ import {Errors} from "../../src/contracts/libraries/Errors.sol";
 import {TestSetUpWithProfileId} from "../setup/TestSetUpWithProfileId.t.sol";
 
 contract ExecutorSupplierVotingStrategy_OfferMilestonesTest is TestSetUpWithProfileId {
-
     event ProjectRegistered(uint256 indexed profileId, uint256 nonce);
 
     function test_UnAuthorizedOfferMilestones() external {

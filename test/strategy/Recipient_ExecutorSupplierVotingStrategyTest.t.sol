@@ -12,9 +12,7 @@ import {IStrategy} from "../../src/contracts/interfaces/IStrategy.sol";
 import {Errors} from "../../src/contracts/libraries/Errors.sol";
 import {TestSetUpWithProfileId} from "../setup/TestSetUpWithProfileId.t.sol";
 
-
 contract ExecutorSupplierVotingStrategy_RecipientTest is TestSetUpWithProfileId {
-
     function test_UnAuthorizedReviewRecipient() external {
         vm.startPrank(projectManager1);
 

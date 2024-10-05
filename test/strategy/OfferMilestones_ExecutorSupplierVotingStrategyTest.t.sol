@@ -15,7 +15,7 @@ import {TestSetUpWithProfileId} from "../setup/TestSetUpWithProfileId.t.sol";
 contract ExecutorSupplierVotingStrategy_OfferMilestonesTest is TestSetUpWithProfileId {
     event ProjectRegistered(uint256 indexed profileId, uint256 nonce);
 
-    function test_UnAuthorizedOfferMilestones() external {
+    function test_UnAuthorizedOfferMilestonesByRecipient() external {
         vm.startPrank(projectManager1);
 
         projectToken.approve(address(manager), 100e18);
@@ -26,9 +26,54 @@ contract ExecutorSupplierVotingStrategy_OfferMilestonesTest is TestSetUpWithProf
         address projectStrategy = manager.getProjectStrategy(profileId);
         ExecutorSupplierVotingStrategy strategyContract = ExecutorSupplierVotingStrategy(payable(projectStrategy));
 
-        vm.expectRevert(Errors.SUPPLIER_HAT_WEARING_REQUIRED.selector);
+        vm.prank(projectManager1);
+        strategyContract.reviewRecipient(projectExecutor, IStrategy.Status.Accepted);
+
+        ExecutorSupplierVotingStrategy.Milestone[] memory milestones = getMilestones();
+
+        vm.expectRevert(Errors.EXECUTOR_HAT_WEARING_REQUIRED.selector);
 
         vm.prank(unAuthorized);
+        strategyContract.offerMilestones(projectExecutor, milestones);
+    }
+
+    function test_OfferMilestonesByRecipient() external {
+        vm.startPrank(projectManager1);
+
+        projectToken.approve(address(manager), 100e18);
+        manager.supplyProject(profileId, 1e18);
+
+        vm.stopPrank();
+
+        address projectStrategy = manager.getProjectStrategy(profileId);
+        ExecutorSupplierVotingStrategy strategyContract = ExecutorSupplierVotingStrategy(payable(projectStrategy));
+
+        vm.prank(projectManager1);
         strategyContract.reviewRecipient(projectExecutor, IStrategy.Status.Accepted);
+
+        ExecutorSupplierVotingStrategy.Milestone[] memory milestones = getMilestones();
+
+        vm.prank(projectExecutor);
+        strategyContract.offerMilestones(projectExecutor, milestones);
+    }
+
+    function getMilestones() public pure returns (ExecutorSupplierVotingStrategy.Milestone[] memory milestones) {
+        Metadata memory metadata = Metadata({protocol: 1, pointer: "example-pointer"});
+        milestones = new ExecutorSupplierVotingStrategy.Milestone[](2);
+
+        // Initialize each element manually
+        milestones[0] = ExecutorSupplierVotingStrategy.Milestone({
+            amountPercentage: 0.5 ether,
+            metadata: metadata,
+            milestoneStatus: IStrategy.Status.Pending, // Assuming 0 corresponds to Pending status
+            description: "I will do my best"
+        });
+
+        milestones[1] = ExecutorSupplierVotingStrategy.Milestone({
+            amountPercentage: 0.5 ether,
+            metadata: metadata,
+            milestoneStatus: IStrategy.Status.Pending,
+            description: "I will do my best"
+        });
     }
 }

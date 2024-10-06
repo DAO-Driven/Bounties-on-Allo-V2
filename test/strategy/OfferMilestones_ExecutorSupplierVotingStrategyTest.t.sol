@@ -37,7 +37,7 @@ contract ExecutorSupplierVotingStrategy_OfferMilestonesTest is TestSetUpWithProf
         strategyContract.offerMilestones(projectExecutor, milestones);
     }
 
-    function test_OfferMilestonesByRecipient() external {
+    function test_OfferMilestonesByManager() external {
         vm.startPrank(projectManager1);
 
         projectToken.approve(address(manager), 100e18);
@@ -53,6 +53,98 @@ contract ExecutorSupplierVotingStrategy_OfferMilestonesTest is TestSetUpWithProf
         strategyContract.offerMilestones(projectExecutor, milestones);
 
         vm.stopPrank();
+    }
+
+    function test_RevertDuplicatedOfferMilestonesByManager() external {
+        vm.startPrank(projectManager1);
+
+        projectToken.approve(address(manager), 100e18);
+        manager.supplyProject(profileId, 1e18);
+
+        address projectStrategy = manager.getProjectStrategy(profileId);
+        ExecutorSupplierVotingStrategy strategyContract = ExecutorSupplierVotingStrategy(payable(projectStrategy));
+
+        strategyContract.reviewRecipient(projectExecutor, IStrategy.Status.Accepted);
+
+        ExecutorSupplierVotingStrategy.Milestone[] memory milestones = getMilestones();
+
+        strategyContract.offerMilestones(projectExecutor, milestones);
+
+        vm.expectRevert(Errors.MILESTONES_ALREADY_SET.selector);
+        strategyContract.offerMilestones(projectExecutor, milestones);
+
+        vm.stopPrank();
+    }
+
+    function test_OfferMilestonesByMultipleManagers() external {
+
+        vm.startPrank(projectManager1);
+
+        projectToken.approve(address(manager), 100e18);
+        manager.supplyProject(profileId, 0.5e18);
+
+        vm.stopPrank();
+
+        vm.startPrank(projectManager2);
+
+        projectToken.approve(address(manager), 100e18);
+        manager.supplyProject(profileId, 0.5e18);
+
+        vm.stopPrank();
+
+        address projectStrategy = manager.getProjectStrategy(profileId);
+        ExecutorSupplierVotingStrategy strategyContract = ExecutorSupplierVotingStrategy(payable(projectStrategy));
+
+        vm.prank(projectManager1);
+        strategyContract.reviewRecipient(projectExecutor, IStrategy.Status.Accepted);
+
+        vm.prank(projectManager2);
+        strategyContract.reviewRecipient(projectExecutor, IStrategy.Status.Accepted);
+
+        ExecutorSupplierVotingStrategy.Milestone[] memory milestones = getMilestones();
+
+        vm.prank(projectManager1);
+        strategyContract.offerMilestones(projectExecutor, milestones);
+
+        vm.prank(projectManager2);
+        strategyContract.reviewOfferedtMilestones(projectExecutor, IStrategy.Status.Accepted);
+    }
+
+    function test_MilestonesResetByMultipleOfferMilestones() external {
+
+        vm.startPrank(projectManager1);
+
+        projectToken.approve(address(manager), 100e18);
+        manager.supplyProject(profileId, 0.5e18);
+
+        vm.stopPrank();
+
+        vm.startPrank(projectManager2);
+
+        projectToken.approve(address(manager), 100e18);
+        manager.supplyProject(profileId, 0.5e18);
+
+        vm.stopPrank();
+
+        address projectStrategy = manager.getProjectStrategy(profileId);
+        ExecutorSupplierVotingStrategy strategyContract = ExecutorSupplierVotingStrategy(payable(projectStrategy));
+
+        vm.prank(projectManager1);
+        strategyContract.reviewRecipient(projectExecutor, IStrategy.Status.Accepted);
+
+        vm.prank(projectManager2);
+        strategyContract.reviewRecipient(projectExecutor, IStrategy.Status.Accepted);
+
+        ExecutorSupplierVotingStrategy.Milestone[] memory milestones = getMilestones();
+
+        vm.prank(projectManager1);
+        strategyContract.offerMilestones(projectExecutor, milestones);
+
+        vm.prank(projectManager1);
+        strategyContract.offerMilestones(projectExecutor, milestones);
+
+        vm.prank(projectManager2);
+        strategyContract.reviewOfferedtMilestones(projectExecutor, IStrategy.Status.Accepted);
     }
 
     function getMilestones() public pure returns (ExecutorSupplierVotingStrategy.Milestone[] memory milestones) {

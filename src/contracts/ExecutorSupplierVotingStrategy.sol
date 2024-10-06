@@ -142,6 +142,8 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
     /// @notice Emitted when offered milestones are rejected for a recipient.
     event OfferedMilestonesRejected(address recipientId);
 
+    event OfferedMilestonesReset(address recipientId);
+
     /// @notice Emitted when tokens of thanks was Sent.
     event TokenOfThanksSent(address supplier, uint256 amount);
 
@@ -464,11 +466,6 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
             revert SUPPLIER_HAT_WEARING_REQUIRED();
         }
 
-        // bool isRecipientCreator = _isProfileMember(_recipientId, msg.sender);
-        // if (!isRecipientCreator) {
-        //     revert UNAUTHORIZED();
-        // }
-
         Recipient storage recipient = _recipients[_recipientId];
 
         // Check if the recipient is accepted, otherwise revert
@@ -479,10 +476,6 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
         // Check if the milestones have already been reviewed and set, and if so, revert
         if (recipient.milestonesReviewStatus == Status.Accepted) {
             revert MILESTONES_ALREADY_SET();
-        }
-
-        if (offeredMilestones[_recipientId].suppliersVotes[msg.sender] > 0) {
-            revert ALREADY_REVIEWED();
         }
 
         _resetOfferedMilestones(_recipientId);
@@ -762,6 +755,8 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
             offeredMilestones[_recipientId].suppliersVotes[_suppliersStore[i]] = 0;
         }
         delete offeredMilestones[_recipientId];
+
+        emit OfferedMilestonesReset(_recipientId);
     }
 
     /// @notice Register a recipient to the pool.

@@ -77,7 +77,6 @@ contract ExecutorSupplierVotingStrategy_OfferMilestonesTest is TestSetUpWithProf
     }
 
     function test_OfferMilestonesByMultipleManagers() external {
-
         vm.startPrank(projectManager1);
 
         projectToken.approve(address(manager), 100e18);
@@ -111,7 +110,6 @@ contract ExecutorSupplierVotingStrategy_OfferMilestonesTest is TestSetUpWithProf
     }
 
     function test_MilestonesResetByMultipleOfferMilestones() external {
-
         vm.startPrank(projectManager1);
 
         projectToken.approve(address(manager), 100e18);

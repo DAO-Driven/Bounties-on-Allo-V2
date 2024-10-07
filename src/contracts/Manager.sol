@@ -2,15 +2,15 @@
 pragma solidity ^0.8.24;
 
 import "forge-std/Test.sol";
-import {IAllo} from "./interfaces/IAllo.sol";
-import {IStrategyFactory} from "./interfaces/IStrategyFactory.sol";
+import {IAllo} from "../../lib/allo-v2/interfaces/IAllo.sol";
+import {IStrategyFactory} from "../../lib/allo-v2/interfaces/IStrategyFactory.sol";
 import {ExecutorSupplierVotingStrategy} from "./ExecutorSupplierVotingStrategy.sol";
-import {IHats} from "./interfaces/Hats/IHats.sol";
+import {IHats} from "../../lib/hats/IHats.sol";
 import {SafeTransferLib} from "../../lib/solady/src/utils/SafeTransferLib.sol";
-import {Errors} from "./libraries/Errors.sol";
+import {Errors} from "../../lib/allo-v2/libraries/Errors.sol";
 
-import "./libraries/Structs.sol";
-import "./interfaces/IRegistry.sol";
+import "../../lib/allo-v2/libraries/Structs.sol";
+import "../../lib/allo-v2/interfaces/IRegistry.sol";
 import "../../lib/openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import "../../lib/openzeppelin-contracts-upgradeable/contracts/proxy/utils/Initializable.sol";
 // import "../../lib/openzeppelin-contracts-upgradeable/contracts/proxy/utils/UUPSUpgradeable.sol";

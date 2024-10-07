@@ -4,12 +4,12 @@ pragma solidity ^0.8.24;
 import "forge-std/Test.sol";
 import {Manager} from "../../src/contracts/Manager.sol";
 import {MockERC20} from "../../src/contracts/mocks/MockERC20.sol";
-import {Metadata} from "../../src/contracts/libraries/Metadata.sol";
-import {IHats} from "../../src/contracts/interfaces/Hats/IHats.sol";
+import {Metadata} from "../../lib/allo-v2/libraries/Metadata.sol";
+import {IHats} from "../../lib/hats/IHats.sol";
 import {ExecutorSupplierVotingStrategy} from "../../src/contracts/ExecutorSupplierVotingStrategy.sol";
-import {StrategyFactory} from "../../src/contracts/libraries/StrategyFactory.sol";
-import {IStrategy} from "../../src/contracts/interfaces/IStrategy.sol";
-import {Errors} from "../../src/contracts/libraries/Errors.sol";
+import {StrategyFactory} from "../../lib/allo-v2/libraries/StrategyFactory.sol";
+import {IStrategy} from "../../lib/allo-v2/interfaces/IStrategy.sol";
+import {Errors} from "../../lib/allo-v2/libraries/Errors.sol";
 
 contract TestSetUpWithProfileId is Test {
     Manager public manager;

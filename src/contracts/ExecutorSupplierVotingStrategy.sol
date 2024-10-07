@@ -5,13 +5,14 @@ pragma solidity 0.8.24;
 import {ReentrancyGuard} from "../../lib/openzeppelin-contracts/contracts/utils/ReentrancyGuard.sol";
 import "../../lib/openzeppelin-contracts/contracts/access/Ownable.sol";
 // Intefaces
-import {IAllo} from "./interfaces/IAllo.sol";
-import {IRegistry} from "./interfaces/IRegistry.sol";
+import {IAllo} from "../../lib/allo-v2/interfaces/IAllo.sol";
+import {IRegistry} from "../../lib/allo-v2/interfaces/IRegistry.sol";
 // Core Contracts
-import {BaseStrategy} from "./BaseStrategy.sol";
+import {BaseStrategy} from "../../lib/allo-v2/BaseStrategy.sol";
+
 // Internal Libraries
-import {Metadata} from "./libraries/Metadata.sol";
-import {IHats} from "./interfaces/Hats/IHats.sol";
+import {Metadata} from "../../lib/allo-v2/libraries/Metadata.sol";
+import {IHats} from "../../lib/hats/IHats.sol";
 
 // ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣾⣿⣷⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣼⣿⣿⣷⣄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢸⣿⣿⣿⣗⠀⠀⠀⢸⣿⣿⣿⡯⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
 // ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣿⣿⣿⣿⣷⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣼⣿⣿⣿⣿⣿⡄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢸⣿⣿⣿⣗⠀⠀⠀⢸⣿⣿⣿⡯⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀

@@ -475,6 +475,7 @@ contract BountyStrategy is BaseStrategy, ReentrancyGuard {
 
         if (hatsContract.isWearerOfHat(msg.sender, executorHat)) {
             _submitMilestone(_recipientId, _milestoneId, milestone, _metadata);
+
         } else if (hatsContract.isWearerOfHat(msg.sender, supplierHat)) {
             _submitMilestone(_recipientId, _milestoneId, milestone, _metadata);
 
@@ -562,6 +563,11 @@ contract BountyStrategy is BaseStrategy, ReentrancyGuard {
                 milestone.milestoneStatus = _status;
                 address[] memory recipientIds = new address[](1);
                 recipientIds[0] = _recipientId;
+
+                uint256 amount = totalSupply * milestone.amountPercentage / 1e18;
+                bytes memory encodedAllocateParams = abi.encode(_recipientId, Status.Accepted, amount);
+                allo.allocate(poolId, encodedAllocateParams);
+
                 allo.distribute(poolId, recipientIds, "");
                 emit MilestoneStatusChanged(_recipientId, _milestoneId, _status);
             }
@@ -744,9 +750,9 @@ contract BountyStrategy is BaseStrategy, ReentrancyGuard {
 
         Recipient storage recipient = _recipients[recipientId];
 
-        if (upcomingMilestone[recipientId] != 0) {
-            revert MILESTONES_ALREADY_SET();
-        }
+        // if (upcomingMilestone[recipientId] != 0) {
+        //     revert MILESTONES_ALREADY_SET();
+        // }
 
         if (recipient.recipientStatus != Status.Accepted && recipientStatus == Status.Accepted) {
             IAllo.Pool memory pool = allo.getPool(poolId);
@@ -815,14 +821,12 @@ contract BountyStrategy is BaseStrategy, ReentrancyGuard {
         // Calculate the amount to be distributed for the milestone
         uint256 amount = recipient.grantAmount * milestone.amountPercentage / 1e18;
 
-        // TODO: check this way
-        bytes memory encodedAllocateParams = abi.encode(_recipientId, Status.Accepted, amount);
-        allo.allocate(poolId, encodedAllocateParams);
-
         // Get the pool, subtract the amount and transfer to the recipient
         IAllo.Pool memory pool = allo.getPool(poolId);
 
         poolAmount -= amount;
+        currentSupply -= amount;
+
         _transferAmount(pool.token, recipient.recipientAddress, amount);
 
         // Increment the upcoming milestone
@@ -898,9 +902,6 @@ contract BountyStrategy is BaseStrategy, ReentrancyGuard {
         if (totalAmountPercentage != 1e18) {
             revert INVALID_MILESTONES_PERCENTAGE();
         }
-
-        // bytes memory encodedAllocateParams = abi.encode(_recipientId, Status.Accepted, totalSupply);
-        // allo.allocate(poolId, encodedAllocateParams);
 
         emit MilestonesSet(_recipientId, milestonesLength);
     }

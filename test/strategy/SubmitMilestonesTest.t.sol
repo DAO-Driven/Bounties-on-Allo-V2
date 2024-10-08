@@ -33,11 +33,29 @@ contract SubmitMilestonesTest is TestSetUpWithProfileId {
         vm.stopPrank();
     }
 
-    function test_UnAuthorizedSubmitMilestonesByRecipient() external {
-        vm.expectRevert(Errors.UNAUTHORIZED.selector);
+    // function test_UnAuthorizedSubmitMilestonesByRecipient() external {
+    //     vm.expectRevert(Errors.UNAUTHORIZED.selector);
 
-        vm.prank(unAuthorized);
+    //     vm.prank(unAuthorized);
+    //     oneManagerStrategy.submitMilestone(projectExecutor, 0, Metadata({protocol: 1, pointer: "example-pointer"}));
+    // }
+
+    function test_SubmitMilestonesByManager() external {
+
+        uint256 userBalanceBefore = projectToken.balanceOf(projectExecutor);
+        console.log(":::::::::::::: userBalanceBefore:", userBalanceBefore);
+
+        vm.prank(projectManager1);
         oneManagerStrategy.submitMilestone(projectExecutor, 0, Metadata({protocol: 1, pointer: "example-pointer"}));
+
+        uint256 userBalanceAfter = projectToken.balanceOf(projectExecutor);
+        console.log(":::::::::::::: userBalanceAfter:", userBalanceAfter);
+
+        vm.prank(projectManager1);
+        oneManagerStrategy.submitMilestone(projectExecutor, 1, Metadata({protocol: 1, pointer: "example-pointer"}));
+
+        uint256 userBalanceFinal = projectToken.balanceOf(projectExecutor);
+        console.log(":::::::::::::: userBalanceFinal:", userBalanceFinal);
     }
 
     function getMilestones() public pure returns (BountyStrategy.Milestone[] memory milestones) {

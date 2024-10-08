@@ -33,7 +33,7 @@ import {IHats} from "../../lib/hats/IHats.sol";
 /// @notice Strategy used to allocate & distribute funds to recipients with milestone payouts. The milestones
 ///         are set by the recipient and the pool manager can accept or reject the milestone. The pool manager
 ///         can also reject the recipient.
-contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
+contract BountyStrategy is BaseStrategy, ReentrancyGuard {
     /// ================================
     /// ========== Storage =============
     /// ================================
@@ -234,7 +234,7 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
     /// @custom:data (uint256 supplierHat, uint256 executorHat)
     function initialize(uint256 _poolId, bytes memory _data) external virtual override {
         (InitializeData memory initData) = abi.decode(_data, (InitializeData));
-        _ExecutorSupplierVotingStrategy_init(_poolId, initData);
+        _BountyStrategy_init(_poolId, initData);
         emit Initialized(_poolId, _data);
     }
 
@@ -242,7 +242,7 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
     /// @dev You only need to pass the 'poolId' to initialize the BaseStrategy and the rest is specific to the strategy
     /// @param _poolId ID of the pool - required to initialize the BaseStrategy
     /// @param _initData The init params for the strategy (uint256 supplierHat, uint256 executorHat, SupplierPower[] supliersPower, address hatsContractAddress;)
-    function _ExecutorSupplierVotingStrategy_init(uint256 _poolId, InitializeData memory _initData) internal {
+    function _BountyStrategy_init(uint256 _poolId, InitializeData memory _initData) internal {
         // Initialize the BaseStrategy
         __BaseStrategy_init(_poolId);
 
@@ -292,107 +292,6 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
     /// @return Recipient Returns the recipient
     function getRecipient(address _recipientId) external view returns (Recipient memory) {
         return _getRecipient(_recipientId);
-    }
-
-    /// @notice Get the status of the milestone of an recipient.
-    /// @dev This is used to check the status of the milestone of an recipient and is strategy specific
-    /// @param _recipientId ID of the recipient
-    /// @param _milestoneId ID of the milestone
-    /// @return Status Returns the status of the milestone using the 'Status' enum
-    function getMilestoneStatus(address _recipientId, uint256 _milestoneId) external view returns (Status) {
-        return milestones[_recipientId][_milestoneId].milestoneStatus;
-    }
-
-    /// @notice Get the milestones.
-    /// @param _recipientId ID of the recipient
-    /// @return Milestone[] Returns the milestones for a 'recipientId'
-    function getMilestones(address _recipientId) external view returns (Milestone[] memory) {
-        return milestones[_recipientId];
-    }
-
-    /// @notice Retrieves the number of votes in favor of the offered milestones for a specific recipient.
-    /// @param _recipientId ID of the recipient
-    /// @return uint256 Number of votes for the offered milestones
-    function getOfferedMilestonesVotesFor(address _recipientId) external view returns (uint256) {
-        return offeredMilestones[_recipientId].votesFor;
-    }
-
-    /// @notice Retrieves the number of votes against the offered milestones for a specific recipient.
-    /// @param _recipientId ID of the recipient
-    /// @return uint256 Number of votes against the offered milestones
-    function getOfferedMilestonesVotesAgainst(address _recipientId) external view returns (uint256) {
-        return offeredMilestones[_recipientId].votesAgainst;
-    }
-
-    /// @notice Retrieves the vote of a specific supplier on the offered milestones for a recipient.
-    /// @param _recipientId ID of the recipient
-    /// @param _supplier Address of the supplier
-    /// @return uint256 Vote count of the supplier on the offered milestones
-    function getSupplierOfferedMilestonesVote(address _recipientId, address _supplier)
-        external
-        view
-        returns (uint256)
-    {
-        return offeredMilestones[_recipientId].suppliersVotes[_supplier];
-    }
-
-    /// @notice Retrieves the number of votes in favor of a specific submitted milestone.
-    /// @param _milestoneId ID of the milestone
-    /// @return uint256 Number of votes for the submitted milestone
-    function getSubmittedMilestonesVotesFor(uint256 _milestoneId) external view returns (uint256) {
-        return submittedvMilestones[_milestoneId].votesFor;
-    }
-
-    /// @notice Retrieves the number of votes against a specific submitted milestone.
-    /// @param _milestoneId ID of the milestone
-    /// @return uint256 Number of votes against the submitted milestone
-    function getSubmittedMilestonesVotesAgainst(uint256 _milestoneId) external view returns (uint256) {
-        return submittedvMilestones[_milestoneId].votesAgainst;
-    }
-
-    /// @notice Retrieves the vote of a specific supplier on a submitted milestone.
-    /// @param _milestoneId ID of the milestone
-    /// @param _supplier Address of the supplier
-    /// @return uint256 Vote count of the supplier on the submitted milestone
-    function getSupplierSubmittedMilestonesVote(uint256 _milestoneId, address _supplier)
-        external
-        view
-        returns (uint256)
-    {
-        return submittedvMilestones[_milestoneId].suppliersVotes[_supplier];
-    }
-
-    /// @notice Retrieves the ID of the next upcoming milestone for a specific recipient.
-    /// @param _recipientId ID of the recipient
-    /// @return uint256 ID of the upcoming milestone
-    function getUpcomingMilestone(address _recipientId) external view returns (uint256) {
-        return upcomingMilestone[_recipientId];
-    }
-
-    /// @notice Retrieves the total number of votes in favor of rejecting the project.
-    /// @return uint256 Total number of votes for rejecting the project
-    function getRejectProjectVotesFor() external view returns (uint256) {
-        return projectReject.votesFor;
-    }
-
-    /// @notice Retrieves the total number of votes against rejecting the project.
-    /// @return uint256 Total number of votes against rejecting the project
-    function getRejectProjectVotesAgainst() external view returns (uint256) {
-        return projectReject.votesAgainst;
-    }
-
-    /// @notice Retrieves the number of votes cast by the calling supplier regarding the rejection of the project.
-    /// @dev This function returns the vote count specific to the supplier who calls it, identified by msg.sender.
-    /// @return uint256 The number of votes cast by the calling supplier on the project rejection proposal.
-    function getRejectProjectSupplierVotes() external view returns (uint256) {
-        return projectReject.suppliersVotes[msg.sender];
-    }
-
-    /// @notice Retrieves the offered milestones for a specific recipient.
-    /// @param _recipientId The ID of the recipient whose milestones are being requested.
-    /// @return Milestone[] An array of milestones offered to the recipient.
-    function getOffeeredMilestones(address _recipientId) external view returns (Milestone[] memory) {
-        return offeredMilestones[_recipientId].milestones;
     }
 
     /// ===============================
@@ -553,15 +452,6 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
     /// @param _milestoneId ID of the milestone being submitted.
     /// @param _metadata Metadata providing proof of work or other relevant information for the milestone.
     function submitMilestone(address _recipientId, uint256 _milestoneId, Metadata calldata _metadata) external {
-        if (!hatsContract.isWearerOfHat(msg.sender, executorHat)) {
-            revert EXECUTOR_HAT_WEARING_REQUIRED();
-        }
-
-        // Ensure that the sender is the recipient of the milestone
-        if (_recipientId != msg.sender) {
-            revert UNAUTHORIZED();
-        }
-
         Recipient memory recipient = _recipients[_recipientId];
 
         // Ensure that the recipient is in an 'Accepted' status
@@ -583,6 +473,23 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
             revert MILESTONE_ALREADY_ACCEPTED();
         }
 
+        if (hatsContract.isWearerOfHat(msg.sender, executorHat)) {
+            _submitMilestone(_recipientId, _milestoneId, milestone, _metadata);
+        } else if (hatsContract.isWearerOfHat(msg.sender, supplierHat)) {
+            _submitMilestone(_recipientId, _milestoneId, milestone, _metadata);
+
+            reviewSubmitedMilestone(_recipientId, _milestoneId, Status.Accepted);
+        } else {
+            revert UNAUTHORIZED();
+        }
+    }
+
+    function _submitMilestone(
+        address _recipientId,
+        uint256 _milestoneId,
+        Milestone storage milestone,
+        Metadata calldata _metadata
+    ) internal {
         for (uint256 i = 0; i < _suppliersStore.length; i++) {
             submittedvMilestones[_milestoneId].suppliersVotes[_suppliersStore[i]] = 0;
         }
@@ -605,7 +512,7 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
     /// @param _milestoneId ID of the milestone being reviewed.
     /// @param _status New status to be set for the milestone (Accepted or Rejected).
     function reviewSubmitedMilestone(address _recipientId, uint256 _milestoneId, Status _status)
-        external
+        public
         onlyPoolManager(msg.sender)
     {
         if (!hatsContract.isWearerOfHat(msg.sender, supplierHat)) {
@@ -634,6 +541,15 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
             revert INVALID_MILESTONE_STATUS();
         }
 
+        _reviewSubmitedMilestone(_recipientId, _milestoneId, _status, milestone);
+    }
+
+    function _reviewSubmitedMilestone(
+        address _recipientId,
+        uint256 _milestoneId,
+        Status _status,
+        Milestone storage milestone
+    ) internal {
         uint256 managerVotingPower = _suplierPower[msg.sender];
         uint256 threshold = totalSupply * thresholdPercentage / 100;
 

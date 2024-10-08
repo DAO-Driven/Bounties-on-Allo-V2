@@ -3,10 +3,10 @@ pragma solidity ^0.8.24;
 
 import "forge-std/Test.sol";
 import {Manager} from "../../src/contracts/Manager.sol";
-import {MockERC20} from "../../src/contracts/mocks/MockERC20.sol";
+import {MockERC20} from "../mocks/MockERC20.sol";
 import {Metadata} from "../../lib/allo-v2/libraries/Metadata.sol";
 import {IHats} from "../../lib/hats/IHats.sol";
-import {ExecutorSupplierVotingStrategy} from "../../src/contracts/ExecutorSupplierVotingStrategy.sol";
+import {BountyStrategy} from "../../src/contracts/BountyStrategy.sol";
 import {StrategyFactory} from "../../lib/allo-v2/libraries/StrategyFactory.sol";
 import {IStrategy} from "../../lib/allo-v2/interfaces/IStrategy.sol";
 import {Errors} from "../../lib/allo-v2/libraries/Errors.sol";
@@ -21,7 +21,7 @@ contract TestSetUpWithProfileId is Test {
     address projectManager2 = address(0x458);
     address projectManager3 = address(0x457);
     address unAuthorized = address(0x455);
-    ExecutorSupplierVotingStrategy strategy;
+    BountyStrategy strategy;
     StrategyFactory strategyFactory;
     address hatsContractAddress = 0x3bc1A0Ad72417f2d411118085256fC53CBdDd137;
     uint256 managerHatID = 0x0000005200010000000000000000000000000000000000000000000000000000;
@@ -29,14 +29,12 @@ contract TestSetUpWithProfileId is Test {
     bytes32 profileId;
     MockERC20 projectToken;
 
-    function setUp() public {
+    function setUp() public virtual {
         projectToken = new MockERC20("TOKEN", "TKN", 18);
 
         strategyFactory = new StrategyFactory();
 
-        strategy = new ExecutorSupplierVotingStrategy(
-            0x1133eA7Af70876e64665ecD07C0A0476d09465a1, "ExecutorSupplierVotingStrategy"
-        );
+        strategy = new BountyStrategy(0x1133eA7Af70876e64665ecD07C0A0476d09465a1, "BountyStrategy");
 
         manager = new Manager();
 

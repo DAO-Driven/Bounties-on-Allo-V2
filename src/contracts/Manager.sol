@@ -4,7 +4,7 @@ pragma solidity ^0.8.24;
 import "forge-std/Test.sol";
 import {IAllo} from "../../lib/allo-v2/interfaces/IAllo.sol";
 import {IStrategyFactory} from "../../lib/allo-v2/interfaces/IStrategyFactory.sol";
-import {ExecutorSupplierVotingStrategy} from "./ExecutorSupplierVotingStrategy.sol";
+import {BountyStrategy} from "./BountyStrategy.sol";
 import {IHats} from "../../lib/hats/IHats.sol";
 import {SafeTransferLib} from "../../lib/solady/src/utils/SafeTransferLib.sol";
 import {Errors} from "../../lib/allo-v2/libraries/Errors.sol";
@@ -277,7 +277,7 @@ contract Manager is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeabl
         emit ProjectFunded(_projectId, _amount);
 
         if (projects[_projectId].supply.has >= projects[_projectId].supply.need) {
-            ExecutorSupplierVotingStrategy.SupplierPower[] memory suppliers = _extractSupliers(_projectId);
+            BountyStrategy.SupplierPower[] memory suppliers = _extractSupliers(_projectId);
             address[] memory managers = new address[](suppliers.length);
 
             for (uint256 i = 0; i < suppliers.length; i++) {
@@ -289,7 +289,7 @@ contract Manager is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeabl
             uint256 strategyHat = _createAndMintStrategyHat("Strategy", projects[_projectId].strategy, "strategyImage");
 
             bytes memory encodedInitData = abi.encode(
-                ExecutorSupplierVotingStrategy.InitializeData({
+                BountyStrategy.InitializeData({
                     strategyHat: strategyHat,
                     projectSuppliers: suppliers,
                     hatsContractAddress: hatsContractAddress,
@@ -305,7 +305,7 @@ contract Manager is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeabl
                 0,
                 Metadata({
                     protocol: 1,
-                    pointer: "https://github.com/alexandr-masl/web3-crowdfunding-on-allo-V2/blob/main/contracts/ExecutorSupplierVotingStrategy.sol"
+                    pointer: "https://github.com/alexandr-masl/web3-crowdfunding-on-allo-V2/blob/main/contracts/BountyStrategy.sol"
                 }),
                 managers
             );
@@ -367,19 +367,15 @@ contract Manager is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeabl
      * @param _projectId The ID of the project for which to extract supplier powers.
      * @return SupplierPower[] An array of SupplierPower structs, each representing a supplier's power for the project.
      */
-    function _extractSupliers(bytes32 _projectId)
-        internal
-        view
-        returns (ExecutorSupplierVotingStrategy.SupplierPower[] memory)
-    {
-        ExecutorSupplierVotingStrategy.SupplierPower[] memory suppliersPower =
-            new ExecutorSupplierVotingStrategy.SupplierPower[](projects[_projectId].suppliers.length);
+    function _extractSupliers(bytes32 _projectId) internal view returns (BountyStrategy.SupplierPower[] memory) {
+        BountyStrategy.SupplierPower[] memory suppliersPower =
+            new BountyStrategy.SupplierPower[](projects[_projectId].suppliers.length);
 
         for (uint256 i = 0; i < projects[_projectId].suppliers.length; i++) {
             address supplierId = projects[_projectId].suppliers[i];
             uint256 supplierPower = projects[_projectId].suppliersById.supplyById[supplierId];
 
-            suppliersPower[i] = ExecutorSupplierVotingStrategy.SupplierPower(supplierId, uint256(supplierPower));
+            suppliersPower[i] = BountyStrategy.SupplierPower(supplierId, uint256(supplierPower));
         }
 
         return suppliersPower;

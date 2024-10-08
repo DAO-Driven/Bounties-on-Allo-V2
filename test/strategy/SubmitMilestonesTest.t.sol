@@ -41,7 +41,6 @@ contract SubmitMilestonesTest is TestSetUpWithProfileId {
     // }
 
     function test_SubmitMilestonesByManager() external {
-
         uint256 userBalanceBefore = projectToken.balanceOf(projectExecutor);
         console.log(":::::::::::::: userBalanceBefore:", userBalanceBefore);
 

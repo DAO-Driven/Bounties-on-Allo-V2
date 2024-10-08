@@ -475,7 +475,6 @@ contract BountyStrategy is BaseStrategy, ReentrancyGuard {
 
         if (hatsContract.isWearerOfHat(msg.sender, executorHat)) {
             _submitMilestone(_recipientId, _milestoneId, milestone, _metadata);
-
         } else if (hatsContract.isWearerOfHat(msg.sender, supplierHat)) {
             _submitMilestone(_recipientId, _milestoneId, milestone, _metadata);
 

@@ -1,101 +1,145 @@
-**Dao Driven on Allo-V2**
+# DAO-Driven | Bounty-Strategy on Allo-V2
 
-[Platform page](https://dao-driven.github.io/ui-dao-driven/){:target="_blank"}
+### Create a bounty with an ERC20 token pool and distribute tokens to bounty hunters based on submitted milestones
 
-Welcome to Decentralized GrantStream, an innovative platform in the Web3 space, designed to bridge the gap between developers and investors. Leveraging the power of Arbitrum, Allo-V2 by GitCoin, and Hats protocols, our platform offers a transparent, democratic process for project funding and management.
+Welcome to an innovative bounty platform in the Web3 space, designed to bridge the gap between investors and developers. Leveraging the power of [Allo-V2](https://github.com/allo-protocol/allo-v2), and [Hats](https://github.com/Hats-Protocol/hats-protocol) protocols, our platform offers a transparent, democratic process for bounty funding and management.
 
-Let's explore a very primitive scenario illustrating how this platform could be utilized:
+## Key Features
 
-<Person 1>
-- Initiates a quest: Offers 1 ETH for writing a highly creative tweet on their behalf.
+### 1. **Bounty Creation**
+   Managers can propose their bounties, outlining their goals and the size of the funding pool. The pool can be funded by either a single manager or multiple managers.
 
-<Person 2>
-- Discovers the task and decides to undertake it.
-- Crafts a creative tweet for Person 1.
-- Submits the tweet as evidence of completion.
+### 2. **Formation of Committee**
+   After full funding is achieved, a 'Committee' is formed from the managers who have contributed to the pool, with each member's voting power proportional to their investment.
 
-<Person 1>
-- Reviews the submitted tweet by Person 2.
-- Option: Accepts or declines the completion.
-  - If accepted: Transfers the agreed-upon funds to Person 2.
-  - If declined: Retains the funds.
+### 3. **Milestones Defining**
+   Managers present a plan with milestones, including fund distribution for each. These milestones are subject to committee voting.
 
-In more complex scenarios, multiple individuals may be involved from Person 1's side, constituting a committee of investors. On the other hand, many individuals from Person 2's side may participate as providers of services and recipients of funds.
+### 4. **Bounty Hunters Participation**
+   Bounty Hunters have the flexibility to browse and pick up projects of their choice. Afterward, they can express their interest in the bounty, and the Managers will vote to determine whether to include them in the project.
 
-Let's delve into a slightly more intricate scenario:
+### 5. **Milestone Submission and Approval Process**
+   Developers submit completed milestones for committee review. Approval or rejection is based on majority votes. Once a milestone is approved, a percentage of the pool size allocated to that milestone is distributed to the Bounty Hunter.
 
-<Developers>
-- Register a new project, providing necessary details like funding needs (let’s say 1 ETH), project name, description, and recipient address.
+### 6. **Bounty Hunter Replacement Option**
+   If there is no progress, the committee can vote to remove the current Bounty Hunter and replace them with a new one.
 
-<Investors > 
-- Two investors fund the project, each contributing 0.5 ether, fully funding the project and gain voting rights in the committee.
+### 7. **Fund Reclamation Option**
+   In case of no progress, the committee can vote to retract funding, redistributing it back to its members.
 
-<Developers>
-- Milestone Planning: Offer a detailed milestone plan for project execution.
+## Operational Flow
 
-<Investors > 
-- Milestone Review and Approval: Review and vote on the offered milestones.
+- Managers present bounty.
+- Managers fund projects and gain voting rights in the committee.
+- The committee oversees fund distribution based on milestone completion.
+- A mechanism for fund retraction ensures investor protection.
 
-<Developers>
-- Milestone Submission and Completion: The Developers work on and submits each milestone. 
+## Vision and Impact
 
-<Investors> 
-- Review and vote on the completed milestones. 
-  - If accepted: Transfers the agreed-upon funds to Developers.
-  - If declined: Retains the funds.
-- After the last milestone is accepted, the project is completed. 
-- Additionally, investors have the option to reject the project at any time and reclaim all funds if the developer fails to make any progress
+Project aims to create a transparent, accountable, and mutually beneficial ecosystem for developers and investors in the decentralized world.
 
+---
 
-**The project will be comprised of two essential components:**
+## Contracts Overview
 
-1. **Allo-V2 Strategy:** This component will manage all the business logic, serving as the backbone of the project by directing its operational framework and decision-making processes.
+### Manager Contract
 
-2. **Committee Formation:** In this segment, each committee member will be allocated voting shares, empowering them with defined influence over decisions within the pool governance structure.
+The **Manager contract** manages the key aspects of bounty registration, pool funding, and the creation of a custom Bounty strategy for each bounty and its corresponding pool. Its main functions include:
 
-Together, these parts form a comprehensive system designed to ensure efficient execution and democratic decision-making.
+- **Bounty Registration:**  
+  The contract allows managers to register new bounties, providing the essential details such as funding requirements and project structure.
 
+- **Pool Funding:**  
+  The Manager contract handles the funding process for each registered bounty. Once a bounty is fully funded by one or more managers, the contract sets up the pool for the bounty's rewards distribution.
 
-***Milestone-Strategy***
+- **Bounty Strategy Creation:**  
+  After a bounty is registered and funded, the contract creates a custom Bounty strategy tailored to the specific pool using the **Strategy Factory**. This strategy defines how the funds will be distributed to bounty hunters upon milestone completion.
 
-The concept involves creating a milestone-based strategy that includes committee members and receivers (or executors). All steps will be DAO-driven, and the committee will vote on any decision.
-
-The strategy encompasses the following use cases:
-
-1. **Crowdfunding Initiative:** Here, project executors present their projects to await funding, while investors transition into roles as committee members. This setup facilitates direct involvement and decision-making by those financially supporting the projects.
-
-2. **Quest Mechanism:** In this scenario, the committee establishes a funding pool and anticipates proposals from executors, who are selected through a voting process. This approach is designed to accommodate the complexities of large-scale projects with multiple milestones. It also offers versatility by serving as a component of broader strategies through sub-agreements. Additionally, it provides a practical solution for local communities aiming to collectively finance and manage tasks.
-
-3. **Contractual Agreement:** This use case involves a predetermined set of executors and committee members, where the strategy essentially operates as a traditional service provision contract.
-
-The core objective of this strategy is to provide a versatile framework capable of addressing everything from isolated cases to the broader vision of a self-sustaining economic ecosystem, acting as both a comprehensive main strategy and, simultaneously, as an integral component within itself
+- **Governance Integration:**  
+  The contract integrates with the **Allo** and **Hats** protocols, leveraging decentralized governance mechanisms to ensure that funders have proportional voting power in managing the bounty’s progress, milestone approval, and possible replacement of Bounty Hunters.
 
 
-Committee formation 
+### BountyStrategy Contract
 
-The committee formation process is designed with distinct methodologies to accommodate different types of pools. Each mechanism is designed to establish a fair and transparent voting process, aligning with the pool's governance and operational dynamics:
+The **BountyStrategy contract** is designed to manage the allocation and distribution of funds to recipients based on milestone-based payouts. It integrates with the **Allo** and **Hats** protocols to ensure a decentralized and transparent process for fund distribution, milestone approval, and governance. Key functionalities of the contract include:
 
-1. **Public Committee:** In this model, voting power is allocated based on the investment amount contributed by each manager to the pool. This approach directly correlates a manager's financial contribution with their influence in decision-making processes.
+- **Milestone-Based Payouts:**  
+  The contract facilitates milestone-based payouts where recipients submit milestones for review. The pool managers and suppliers vote to approve or reject these milestones. Once approved, a portion of the funds from the pool is distributed to the recipient.
 
-2. **Private Committee:** Admins create this type of pool, specifying all managers and granting access during its creation. The private pool features varied mechanisms for committee formation:
-   
-   - **DAO-Token Based:** This mechanism is applicable when pool managers are also members of another DAO. The voting power within the pool is determined by the DAO tokens held by the managers. The total tokens held represent 100%, and each manager's share of these tokens dictates their voting power.
-   
-   - **Predefined Voting Power:** Here, the admin assigns voting power to each manager.
-   
-   - **Contribution-Based Voting:** Similar to the Public Committee approach, this mechanism assigns voting power based on the token amount each manager invests in the pool. It ensures that investment contributions directly influence decision-making authority.
+- **Recipient and Milestone Governance:**  
+  The contract allows for the registration of recipients and the submission of milestones. Both recipients and milestones undergo a voting process where managers vote based on their power, which is proportional to their contribution to the pool. Recipients can be rejected, and milestones can be modified or reset as needed.
+
+- **Voting Mechanism:**  
+  The contract implements a voting system where each supplier's voting power is proportional to their contribution to the project. Decisions regarding the approval of milestones and recipients are made based on a threshold percentage of the total supplier voting power.
+
+- **Hats Protocol Integration:**  
+  Using the Hats protocol, the contract assigns specific roles to suppliers, managers, and recipients. Hats are created and minted for various project roles, such as managers and executors, ensuring that only eligible individuals can participate in the governance process.
+
+- **Automated Fund Distribution:**  
+  Upon the successful approval of milestones, the contract automatically distributes the allocated funds to the recipient. This ensures that payments are made in a timely and transparent manner based on the approved milestones.
+
+- **Project Rejection Mechanism:**  
+  The contract includes a mechanism to reject entire projects based on supplier votes. If a project is rejected, the contract redistributes the remaining funds back to the original suppliers according to their contribution percentages.
+
+- **Security and Reentrancy Protection:**  
+  Leveraging OpenZeppelin’s **ReentrancyGuard**, the contract ensures secure transactions and mitigates reentrancy attacks, providing a robust layer of security for fund distribution and voting processes.
+
+The Bounty Strategy contract is the backbone of the Decentralized GrantStream platform is a crucial component that manages the allocation and distribution of funds to hunters based on milestone achievements. It ensures that the funding process is democratic, transparent, and aligned with the investors' interests.
+
+For more details, visit the [Allo V2 GitHub Repository](https://github.com/allo-protocol/allo-v2/tree/main).
+
+---
+
+## Getting Started
+
+To interact with our platform, clone the repository and install the dependencies. Ensure you have a working knowledge of Solidity, smart contract interactions, and a basic understanding of the Ethereum network.
+
+## License
+
+This project is licensed under [MIT License](LICENSE).
+
+---
+
+Join us in revolutionizing the Bounty landscape in the Web3 ecosystem with DAO Driven! 🚀🌐
+
+---
+
+# Bounty Scenarios
+
+## Introduction
+
+This document outlines various scenarios demonstrating the functionality of the project, a Web3 bounty ecosystem.
+
+## Scenario Summaries
+
+### CASE 1: Successful Project Completion
+
+#### Steps:
+1. **Project Registration**: A manager or automated bot registers a new project, providing the necessary details and funds the project.
+2. **Milestone Planning**: The manager outlines a detailed milestone plan for the project's execution.
+3. **Milestone Review and Approval**: The committee of managers and suppliers reviews and approves the proposed milestones.
+4. **Milestone Submission and Completion**: The Bounty Hunter accepts the bounty, works on the milestones, and submits each one for review. Investors (managers and suppliers) review and approve the completed milestones.
+5. **Project Completion**: Once the final milestone is approved, the project is successfully completed, and all allocated funds are distributed to the Bounty Hunter.
+
+### CASE 2: Project Rejection
+
+#### Steps:
+1. **Project Funding**: Similar to Case 1, the project is fully funded by two investors.
+2. **Project Rejection**: Due to a lack of progress from the bounty hunter, investors decide to revoke their support and vote to reject the project.
+4. **Fund Redistribution**: Upon project rejection, funds are redistributed back to the managers.
+
+## Conclusion
+
+These scenarios demonstrate the flexibility and democratic nature of the platform. It empowers investors to actively participate in project development and ensures accountability from project executors. The platform's design caters to various possible outcomes, from successful project completion to partial success and complete rejection, reflecting real-world investment dynamics in the Web3 ecosystem.
 
 
-Regardless of the chosen method for forming a committee, the final approval will hinge on a vote by the managers. This process must reach a threshold percentage, predetermined by the admin, to ensure consensus and legitimacy in the formation of the committee.
+## Future Plans for the Project
 
+As we continue to develop and enhance the Decentralized GrantStream platform, we aim to introduce new features and strategies to improve functionality and user engagement:
 
-Advanced Governance and Community Engagement Mechanisms 
+1. **Integration of ERC-1155 Tokens:**
+   - **Voting Token Type:** These tokens facilitate the delegation of voting rights, with a potential sub-delegation process.
+   - **Reputation Token Type:** Aimed at building user reputation, these non-transferable tokens can be minted or revoked by the management contract.
 
-1. Integration of ERC-1155 Tokens:
-   - Reputation Token Type: Aimed at building user reputation, these non-transferable tokens can be minted or revoked by the management contract, offering benefits like loans for executors with high reputation and additional voting power for reputable investors.
-
-2. Delegate/Revoke & Sub-Delegate/Revoke Voting Rights:
-   - A sophisticated system for the delegation and revocability of voting rights, allowing investors to delegate their voting tokens to managers, who can then sub-delegate to others, creating a hierarchical structure. This process is tracked using the Hats protocol and the project's ERC-1155 tokens, establishing a tiered system of delegation where any Hat at a higher level can revoke voting rights from any below it.
-
-3. Utilization of the Hats Protocol and Guild for Discord Roles:
-   - Establishing a new Discord branch for each strategy to enable efficient discussion and collaboration among participants.
+2. **Delegate/Revoke & Sub-Delegate/Revoke Voting Rights:**
+   A sophisticated system for the delegation and revocability of voting rights, allowing investors to delegate their voting tokens to managers, who can then sub-delegate to others, creating a hierarchical structure. This process is tracked using the Hats protocol and the project's ERC-1155 tokens, establishing a tiered system of delegation where any Hat at a higher level can revoke voting rights from any below it.

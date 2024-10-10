@@ -8,7 +8,7 @@ import {IStrategy} from "../../lib/allo-v2/interfaces/IStrategy.sol";
 import {Errors} from "../../lib/allo-v2/libraries/Errors.sol";
 import {TestSetUpWithProfileId} from "../setup/TestSetUpWithProfileId.t.sol";
 
-contract SubmitMilestonesTest is TestSetUpWithProfileId {
+contract RejectProjectTest is TestSetUpWithProfileId {
     event ProjectRegistered(uint256 indexed profileId, uint256 nonce);
 
     BountyStrategy oneManagerStrategy;
@@ -26,40 +26,44 @@ contract SubmitMilestonesTest is TestSetUpWithProfileId {
 
         oneManagerStrategy.reviewRecipient(projectExecutor, IStrategy.Status.Accepted);
 
+        vm.stopPrank();
+    }
+
+    function test_UnAuthorizedRejectProject() external {
+        vm.expectRevert(Errors.UNAUTHORIZED.selector);
+
+        vm.prank(unAuthorized);
+        oneManagerStrategy.rejectProject(IStrategy.Status.Accepted);
+    }
+
+    function test_RejectProject() external {
+        vm.prank(projectManager1);
+        oneManagerStrategy.rejectProject(IStrategy.Status.Accepted);
+    }
+
+    function test_RejectProjectAfterMilestonesSet() external {
         BountyStrategy.Milestone[] memory milestones = getMilestones();
 
+        vm.startPrank(projectManager1);
+
         oneManagerStrategy.offerMilestones(projectExecutor, milestones);
+        oneManagerStrategy.rejectProject(IStrategy.Status.Accepted);
 
         vm.stopPrank();
     }
 
-    function test_UnAuthorizedSubmitMilestonesByRecipient() external {
-        vm.expectRevert(Errors.UNAUTHORIZED.selector);
+    function test_RejectProjectAfterMilestoneSubmited() external {
+        BountyStrategy.Milestone[] memory milestones = getMilestones();
 
-        vm.prank(unAuthorized);
-        oneManagerStrategy.submitMilestone(projectExecutor, 0, Metadata({protocol: 1, pointer: "example-pointer"}));
-    }
+        vm.startPrank(projectManager1);
 
-    function test_SubmitMilestonesByManager() external {
-        vm.prank(projectManager1);
+        oneManagerStrategy.offerMilestones(projectExecutor, milestones);
+
         oneManagerStrategy.submitMilestone(projectExecutor, 0, Metadata({protocol: 1, pointer: "example-pointer"}));
 
-        vm.prank(projectManager1);
-        oneManagerStrategy.submitMilestone(projectExecutor, 1, Metadata({protocol: 1, pointer: "example-pointer"}));
-    }
+        oneManagerStrategy.rejectProject(IStrategy.Status.Accepted);
 
-    function test_SubmitMilestonesByExecutor() external {
-        vm.prank(projectExecutor);
-        oneManagerStrategy.submitMilestone(projectExecutor, 0, Metadata({protocol: 1, pointer: "example-pointer"}));
-
-        vm.prank(projectManager1);
-        oneManagerStrategy.reviewSubmitedMilestone(projectExecutor, 0, IStrategy.Status.Accepted);
-
-        vm.prank(projectExecutor);
-        oneManagerStrategy.submitMilestone(projectExecutor, 1, Metadata({protocol: 1, pointer: "example-pointer"}));
-
-        vm.prank(projectManager1);
-        oneManagerStrategy.reviewSubmitedMilestone(projectExecutor, 1, IStrategy.Status.Accepted);
+        vm.stopPrank();
     }
 
     function getMilestones() public pure returns (BountyStrategy.Milestone[] memory milestones) {

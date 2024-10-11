@@ -354,6 +354,8 @@ contract BountyStrategy is BaseStrategy, ReentrancyGuard {
         delete _recipients[_recipient];
         registeredRecipients--;
         hatsContract.setHatWearerStatus(executorHat, _recipient, false, false);
+        bytes memory encodedAllocateParams = abi.encode(_recipient, Status.Rejected, 0);
+        allo.allocate(poolId, encodedAllocateParams);
     }
 
     /// @notice Offers milestones to a specific recipient.
@@ -748,10 +750,6 @@ contract BountyStrategy is BaseStrategy, ReentrancyGuard {
             abi.decode(_data, (address, Status, uint256));
 
         Recipient storage recipient = _recipients[recipientId];
-
-        // if (upcomingMilestone[recipientId] != 0) {
-        //     revert MILESTONES_ALREADY_SET();
-        // }
 
         if (recipient.recipientStatus != Status.Accepted && recipientStatus == Status.Accepted) {
             IAllo.Pool memory pool = allo.getPool(poolId);

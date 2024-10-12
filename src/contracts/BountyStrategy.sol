@@ -4,15 +4,17 @@ pragma solidity 0.8.24;
 // External Libraries
 import {ReentrancyGuard} from "../../lib/openzeppelin-contracts/contracts/utils/ReentrancyGuard.sol";
 import "../../lib/openzeppelin-contracts/contracts/access/Ownable.sol";
+
 // Intefaces
 import {IAllo} from "../../lib/allo-v2/interfaces/IAllo.sol";
 import {IRegistry} from "../../lib/allo-v2/interfaces/IRegistry.sol";
+import {IHats} from "../../lib/hats/IHats.sol";
+
 // Core Contracts
 import {BaseStrategy} from "../../lib/allo-v2/BaseStrategy.sol";
 
 // Internal Libraries
 import {Metadata} from "../../lib/allo-v2/libraries/Metadata.sol";
-import {IHats} from "../../lib/hats/IHats.sol";
 
 // ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣾⣿⣷⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣼⣿⣿⣷⣄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢸⣿⣿⣿⣗⠀⠀⠀⢸⣿⣿⣿⡯⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
 // ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣿⣿⣿⣿⣷⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣼⣿⣿⣿⣿⣿⡄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢸⣿⣿⣿⣗⠀⠀⠀⢸⣿⣿⣿⡯⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
@@ -106,6 +108,19 @@ contract BountyStrategy is BaseStrategy, ReentrancyGuard {
         uint256 supplierPowerr; // Power value associated with the supplier.
     }
 
+    struct Storage {
+        StrategyState state;
+        uint256 registeredRecipients;
+        uint32 maxRecipientsAmount;
+        uint256 strategyHat;
+        uint256 supplierHat;
+        uint256 executorHat;
+        uint256 totalSupply;
+        uint256 currentSupply;
+        uint256 thresholdPercentage;
+        uint256 allocatedGrantAmount;
+    }
+
     /// ===============================
     /// ========== Events =============
     /// ===============================
@@ -148,40 +163,10 @@ contract BountyStrategy is BaseStrategy, ReentrancyGuard {
     /// @notice Emitted when tokens of thanks was Sent.
     event TokenOfThanksSent(address supplier, uint256 amount);
 
-    /// ================================
-    /// ========== Storage =============
-    /// ================================
-
-    /// @notice Holds the current state of the strategy.
-    StrategyState public state;
-
-    uint256 public registeredRecipients;
-    uint32 public maxRecipientsAmount;
-
-    uint256 public strategyHat;
-
-    /// @notice Stores the ID of the Supplier Hat.
-    uint256 public supplierHat;
-
-    /// @notice Stores the ID of the Executor Hat.
-    uint256 public executorHat;
-
-    /// @notice Total supply of tokens or resources managed by the strategy.
-    uint256 public totalSupply;
-
-    uint256 public currentSupply;
-
-    /// @notice Percentage threshold for decision-making or other strategy-related actions.
-    uint256 public thresholdPercentage;
-
     /// @notice Interface to interact with the 'Registry' contract.
     IRegistry private _registry;
 
-    /// @notice Total amount allocated for grants to recipients.
-    uint256 public allocatedGrantAmount;
-
-    /// @notice Address of the Hats main contract.
-    IHats public hatsContract;
+    IHats private _hatsContract;
 
     /// @notice List of recipient addresses that have been accepted and can submit milestones.
     address[] private _acceptedRecipientIds;
@@ -189,14 +174,14 @@ contract BountyStrategy is BaseStrategy, ReentrancyGuard {
     /// @notice Temporary storage for supplier addresses.
     address[] private _suppliersStore;
 
-    mapping(address => OfferedMilestones) offeredMilestones;
-
     /// @notice Mapping of recipient addresses to their detailed information.
     /// @dev Maps 'recipientId' to 'Recipient' struct.
     mapping(address => Recipient) private _recipients;
 
     /// @notice Mapping of supplier addresses to their power value.
     mapping(address => uint256) private _suplierPower;
+
+    mapping(address => OfferedMilestones) public offeredMilestones;
 
     /// @notice Mapping of recipient addresses to their offered milestones.
     mapping(address => OfferedRecipient) public offeredRecipient;
@@ -215,6 +200,8 @@ contract BountyStrategy is BaseStrategy, ReentrancyGuard {
     /// @notice Mapping of milestone IDs to their submitted milestone details.
     mapping(uint256 => SubmiteddMilestone) public submittedvMilestones;
 
+    Storage public strategyStorage;
+
     /// ===============================
     /// ======== Constructor ==========
     /// ===============================
@@ -231,26 +218,21 @@ contract BountyStrategy is BaseStrategy, ReentrancyGuard {
     /// @notice Initialize the strategy
     /// @param _poolId ID of the pool
     /// @param _data The data to be decoded
-    /// @custom:data (uint256 supplierHat, uint256 executorHat)
     function initialize(uint256 _poolId, bytes memory _data) external virtual override {
         (InitializeData memory initData) = abi.decode(_data, (InitializeData));
         _BountyStrategy_init(_poolId, initData);
         emit Initialized(_poolId, _data);
     }
 
-    /// @notice This initializes the BaseStrategy
-    /// @dev You only need to pass the 'poolId' to initialize the BaseStrategy and the rest is specific to the strategy
-    /// @param _poolId ID of the pool - required to initialize the BaseStrategy
-    /// @param _initData The init params for the strategy (uint256 supplierHat, uint256 executorHat, SupplierPower[] supliersPower, address hatsContractAddress;)
     function _BountyStrategy_init(uint256 _poolId, InitializeData memory _initData) internal {
         // Initialize the BaseStrategy
         __BaseStrategy_init(_poolId);
 
         // Set the strategy specific variables
-        strategyHat = _initData.strategyHat;
-        thresholdPercentage = 77;
-        hatsContract = IHats(_initData.hatsContractAddress);
-        maxRecipientsAmount = _initData.maxRecipients;
+        strategyStorage.strategyHat = _initData.strategyHat;
+        strategyStorage.thresholdPercentage = 77;
+        _hatsContract = IHats(_initData.hatsContractAddress);
+        strategyStorage.maxRecipientsAmount = _initData.maxRecipients;
 
         SupplierPower[] memory supliersPower = _initData.projectSuppliers;
 
@@ -264,17 +246,17 @@ contract BountyStrategy is BaseStrategy, ReentrancyGuard {
 
             // Normalize supplier power to a percentage
             _suplierPower[supliersPower[i].supplierId] = (supliersPower[i].supplierPowerr * 1e18) / totalInvestment;
-            totalSupply += _suplierPower[supliersPower[i].supplierId];
+            strategyStorage.totalSupply += _suplierPower[supliersPower[i].supplierId];
         }
 
-        currentSupply = totalSupply;
+        strategyStorage.currentSupply = strategyStorage.totalSupply;
 
         _registry = allo.getRegistry();
 
         // Set the pool to active - this is required for the strategy to work and distribute funds
         _setPoolActive(true);
 
-        state = StrategyState.Active;
+        strategyStorage.state = StrategyState.Active;
 
         _createAndMintManagerHat(
             "Manager", supliersPower, "ipfs://bafkreiey2a5jtqvjl4ehk3jx7fh7edsjqmql6vqxdh47znsleetug44umy/"
@@ -299,7 +281,7 @@ contract BountyStrategy is BaseStrategy, ReentrancyGuard {
     /// ===============================
 
     function reviewRecipient(address _recipient, Status _status) external {
-        if (_status == Status.Accepted && registeredRecipients >= maxRecipientsAmount) {
+        if (_status == Status.Accepted && strategyStorage.registeredRecipients >= strategyStorage.maxRecipientsAmount) {
             revert MAX_RECIPIENTS_AMOUNT_REACHED();
         }
         if (_recipients[_recipient].recipientStatus == Status.Accepted && _status == Status.Accepted) {
@@ -309,18 +291,18 @@ contract BountyStrategy is BaseStrategy, ReentrancyGuard {
         bytes memory encodedRecipientParams = abi.encode(
             _recipient,
             0x0000000000000000000000000000000000000000,
-            currentSupply,
+            strategyStorage.currentSupply,
             Metadata({protocol: 1, pointer: "executor"})
         );
 
-        if (!hatsContract.isWearerOfHat(msg.sender, supplierHat)) {
+        if (!_hatsContract.isWearerOfHat(msg.sender, strategyStorage.supplierHat)) {
             revert SUPPLIER_HAT_WEARING_REQUIRED();
         } else if (offeredRecipient[_recipient].managersVotes[msg.sender] > 0) {
             revert ALREADY_REVIEWED();
         }
 
         uint256 managerVotingPower = _suplierPower[msg.sender];
-        uint256 threshold = totalSupply * thresholdPercentage / 100;
+        uint256 threshold = strategyStorage.totalSupply * strategyStorage.thresholdPercentage / 100;
 
         offeredRecipient[_recipient].managersVotes[msg.sender] = managerVotingPower;
 
@@ -328,7 +310,7 @@ contract BountyStrategy is BaseStrategy, ReentrancyGuard {
             offeredRecipient[_recipient].votesFor += managerVotingPower;
 
             if (offeredRecipient[_recipient].votesFor > threshold) {
-                hatsContract.mintHat(executorHat, _recipient);
+                _hatsContract.mintHat(strategyStorage.executorHat, _recipient);
 
                 allo.registerRecipient(poolId, encodedRecipientParams);
                 _dropRecipientsVotes(_recipient);
@@ -352,8 +334,8 @@ contract BountyStrategy is BaseStrategy, ReentrancyGuard {
 
     function _removeRecipient(address _recipient) internal {
         delete _recipients[_recipient];
-        registeredRecipients--;
-        hatsContract.setHatWearerStatus(executorHat, _recipient, false, false);
+        strategyStorage.registeredRecipients--;
+        _hatsContract.setHatWearerStatus(strategyStorage.executorHat, _recipient, false, false);
         bytes memory encodedAllocateParams = abi.encode(_recipient, Status.Rejected, 0);
         allo.allocate(poolId, encodedAllocateParams);
     }
@@ -364,7 +346,7 @@ contract BountyStrategy is BaseStrategy, ReentrancyGuard {
     /// @dev Requires the sender to be wearing the executor hat and to be either the recipient or a member of the recipient's profile.
     /// Emits a MilestonesOffered event upon successful offering of milestones.
     function offerMilestones(address _recipientId, Milestone[] memory _milestones) external {
-        if (!hatsContract.isWearerOfHat(msg.sender, supplierHat)) {
+        if (!_hatsContract.isWearerOfHat(msg.sender, strategyStorage.supplierHat)) {
             revert SUPPLIER_HAT_WEARING_REQUIRED();
         }
 
@@ -401,7 +383,7 @@ contract BountyStrategy is BaseStrategy, ReentrancyGuard {
     /// @dev Requires the sender to be the pool manager and wearing the supplier hat.
     /// Emits a MilestonesReviewed event and, depending on the outcome, either OfferedMilestonesAccepted or OfferedMilestonesRejected.
     function reviewOfferedtMilestones(address _recipientId, Status _status) external onlyPoolManager(msg.sender) {
-        if (!hatsContract.isWearerOfHat(msg.sender, supplierHat)) {
+        if (!_hatsContract.isWearerOfHat(msg.sender, strategyStorage.supplierHat)) {
             revert SUPPLIER_HAT_WEARING_REQUIRED();
         }
 
@@ -423,7 +405,7 @@ contract BountyStrategy is BaseStrategy, ReentrancyGuard {
     }
 
     function _reviewOfferedtMilestones(address _recipientId, Status _status, uint256 _votingPower) internal {
-        uint256 threshold = totalSupply * thresholdPercentage / 100;
+        uint256 threshold = strategyStorage.totalSupply * strategyStorage.thresholdPercentage / 100;
 
         if (_status == Status.Accepted) {
             offeredMilestones[_recipientId].votesFor += _votingPower;
@@ -475,9 +457,9 @@ contract BountyStrategy is BaseStrategy, ReentrancyGuard {
             revert MILESTONE_ALREADY_ACCEPTED();
         }
 
-        if (hatsContract.isWearerOfHat(msg.sender, executorHat)) {
+        if (_hatsContract.isWearerOfHat(msg.sender, strategyStorage.executorHat)) {
             _submitMilestone(_recipientId, _milestoneId, milestone, _metadata);
-        } else if (hatsContract.isWearerOfHat(msg.sender, supplierHat)) {
+        } else if (_hatsContract.isWearerOfHat(msg.sender, strategyStorage.supplierHat)) {
             _submitMilestone(_recipientId, _milestoneId, milestone, _metadata);
 
             reviewSubmitedMilestone(_recipientId, _milestoneId, Status.Accepted);
@@ -517,7 +499,7 @@ contract BountyStrategy is BaseStrategy, ReentrancyGuard {
         public
         onlyPoolManager(msg.sender)
     {
-        if (!hatsContract.isWearerOfHat(msg.sender, supplierHat)) {
+        if (!_hatsContract.isWearerOfHat(msg.sender, strategyStorage.supplierHat)) {
             revert SUPPLIER_HAT_WEARING_REQUIRED();
         }
 
@@ -553,7 +535,7 @@ contract BountyStrategy is BaseStrategy, ReentrancyGuard {
         Milestone storage milestone
     ) internal {
         uint256 managerVotingPower = _suplierPower[msg.sender];
-        uint256 threshold = totalSupply * thresholdPercentage / 100;
+        uint256 threshold = strategyStorage.totalSupply * strategyStorage.thresholdPercentage / 100;
 
         submittedvMilestones[_milestoneId].suppliersVotes[msg.sender] = managerVotingPower;
 
@@ -565,7 +547,7 @@ contract BountyStrategy is BaseStrategy, ReentrancyGuard {
                 address[] memory recipientIds = new address[](1);
                 recipientIds[0] = _recipientId;
 
-                uint256 amount = totalSupply * milestone.amountPercentage / 1e18;
+                uint256 amount = strategyStorage.totalSupply * milestone.amountPercentage / 1e18;
                 bytes memory encodedAllocateParams = abi.encode(_recipientId, Status.Accepted, amount);
                 allo.allocate(poolId, encodedAllocateParams);
 
@@ -595,7 +577,7 @@ contract BountyStrategy is BaseStrategy, ReentrancyGuard {
     ///      Emits a `ProjectRejected` event if the project is rejected, or a `ProjectRejectDeclined` event if the rejection is declined.
     /// @param _status The proposed status for the project (either Accepted or Rejected).
     function rejectProject(Status _status) external onlyPoolManager(msg.sender) {
-        if (!hatsContract.isWearerOfHat(msg.sender, supplierHat)) {
+        if (!_hatsContract.isWearerOfHat(msg.sender, strategyStorage.supplierHat)) {
             revert SUPPLIER_HAT_WEARING_REQUIRED();
         }
 
@@ -608,7 +590,7 @@ contract BountyStrategy is BaseStrategy, ReentrancyGuard {
         }
 
         uint256 managerVotingPower = _suplierPower[msg.sender];
-        uint256 threshold = totalSupply * thresholdPercentage / 100;
+        uint256 threshold = strategyStorage.totalSupply * strategyStorage.thresholdPercentage / 100;
         projectReject.suppliersVotes[msg.sender] = managerVotingPower;
 
         if (_status == Status.Accepted) {
@@ -617,7 +599,7 @@ contract BountyStrategy is BaseStrategy, ReentrancyGuard {
             if (projectReject.votesFor > threshold) {
                 _distributeFundsBackToSuppliers();
 
-                state = StrategyState.Rejected;
+                strategyStorage.state = StrategyState.Rejected;
                 _setPoolActive(false);
 
                 emit ProjectRejected();
@@ -732,7 +714,7 @@ contract BountyStrategy is BaseStrategy, ReentrancyGuard {
 
         // Add the recipient to the accepted recipient ids mapping
         _recipients[recipientId] = recipient;
-        registeredRecipients++;
+        strategyStorage.registeredRecipients++;
         // Emit event for the registration
         emit Registered(recipientId, _data, _sender);
     }
@@ -753,10 +735,10 @@ contract BountyStrategy is BaseStrategy, ReentrancyGuard {
 
         if (recipient.recipientStatus != Status.Accepted && recipientStatus == Status.Accepted) {
             IAllo.Pool memory pool = allo.getPool(poolId);
-            allocatedGrantAmount += grantAmount;
+            strategyStorage.allocatedGrantAmount += grantAmount;
 
             // Check if the allocated grant amount exceeds the pool amount and reverts if it does
-            if (allocatedGrantAmount > poolAmount) {
+            if (strategyStorage.allocatedGrantAmount > poolAmount) {
                 revert ALLOCATION_EXCEEDS_POOL_AMOUNT();
             }
 
@@ -822,7 +804,7 @@ contract BountyStrategy is BaseStrategy, ReentrancyGuard {
         IAllo.Pool memory pool = allo.getPool(poolId);
 
         poolAmount -= amount;
-        currentSupply -= amount;
+        strategyStorage.currentSupply -= amount;
 
         _transferAmount(pool.token, recipient.recipientAddress, amount);
 
@@ -830,7 +812,7 @@ contract BountyStrategy is BaseStrategy, ReentrancyGuard {
         upcomingMilestone[_recipientId]++;
 
         if (upcomingMilestone[_recipientId] >= recipientMilestones.length) {
-            state = StrategyState.Executed;
+            strategyStorage.state = StrategyState.Executed;
             _setPoolActive(false);
         }
 
@@ -908,27 +890,39 @@ contract BountyStrategy is BaseStrategy, ReentrancyGuard {
         SupplierPower[] memory _hatWearers,
         string memory _imageURI
     ) private {
-        uint256 hat = hatsContract.createHat(
-            strategyHat, _hatName, uint32(_hatWearers.length), address(this), address(this), true, _imageURI
+        uint256 hat = _hatsContract.createHat(
+            strategyStorage.strategyHat,
+            _hatName,
+            uint32(_hatWearers.length),
+            address(this),
+            address(this),
+            true,
+            _imageURI
         );
 
         for (uint256 i = 0; i < _hatWearers.length; i++) {
-            bool isEligible = hatsContract.isEligible(_hatWearers[i].supplierId, hat);
+            bool isEligible = _hatsContract.isEligible(_hatWearers[i].supplierId, hat);
 
             if (isEligible) {
-                hatsContract.mintHat(hat, _hatWearers[i].supplierId);
+                _hatsContract.mintHat(hat, _hatWearers[i].supplierId);
             }
         }
 
-        supplierHat = hat;
+        strategyStorage.supplierHat = hat;
     }
 
     function _createRecipientHat(string memory _hatName, string memory _imageURI) private returns (uint256 hatId) {
-        hatId = hatsContract.createHat(
-            supplierHat, _hatName, maxRecipientsAmount, address(this), address(this), true, _imageURI
+        hatId = _hatsContract.createHat(
+            strategyStorage.supplierHat,
+            _hatName,
+            strategyStorage.maxRecipientsAmount,
+            address(this),
+            address(this),
+            true,
+            _imageURI
         );
 
-        executorHat = hatId;
+        strategyStorage.executorHat = hatId;
     }
 
     /// @notice This contract should be able to receive native token

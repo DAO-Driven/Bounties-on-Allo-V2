@@ -63,7 +63,6 @@ contract ManagerTest is Test {
     }
 
     function test_getProjectSuppliers() external {
-
         vm.startPrank(projectManager1);
 
         projectToken.approve(address(manager), 100e18);
@@ -149,7 +148,6 @@ contract ManagerTest is Test {
     }
 
     function test_supplyProject() external {
-
         vm.startPrank(projectManager1);
 
         projectToken.approve(address(manager), 100e18);
@@ -167,7 +165,6 @@ contract ManagerTest is Test {
     }
 
     function test_supplyProjectAndRevokeSupply() external {
-
         vm.startPrank(projectManager1);
 
         projectToken.approve(address(manager), 100e18);

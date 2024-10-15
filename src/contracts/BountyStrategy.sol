@@ -55,7 +55,6 @@ contract BountyStrategy is BaseStrategy, ReentrancyGuard {
         uint256 grantAmount;
         Metadata metadata;
         Status recipientStatus;
-        Status milestonesReviewStatus;
     }
 
     /// @notice Struct to hold milestone details
@@ -144,21 +143,21 @@ contract BountyStrategy is BaseStrategy, ReentrancyGuard {
     event ProjectRejected();
 
     /// @notice Emitted when milestones are set for a recipient.
-    event MilestonesSet(address recipientId, uint256 milestonesLength);
+    event MilestonesSet(uint256 milestonesLength);
 
     /// @notice Emitted when milestones for a recipient are reviewed.
-    event MilestonesReviewed(address recipientId, Status status);
+    event MilestonesReviewed(Status status);
 
     /// @notice Emitted when milestones are offered to a recipient.
-    event MilestonesOffered(address recipientId, uint256 milestonesLength);
+    event MilestonesOffered(uint256 milestonesLength);
 
     /// @notice Emitted when offered milestones are accepted for a recipient.
-    event OfferedMilestonesAccepted(address recipientId);
+    event OfferedMilestonesAccepted();
 
     /// @notice Emitted when offered milestones are rejected for a recipient.
-    event OfferedMilestonesRejected(address recipientId);
+    event OfferedMilestonesRejected();
 
-    event OfferedMilestonesReset(address recipientId);
+    event OfferedMilestonesReset();
 
     /// @notice Emitted when tokens of thanks was Sent.
     event TokenOfThanksSent(address supplier, uint256 amount);
@@ -181,17 +180,14 @@ contract BountyStrategy is BaseStrategy, ReentrancyGuard {
     /// @notice Mapping of supplier addresses to their power value.
     mapping(address => uint256) private _suplierPower;
 
-    mapping(address => OfferedMilestones) public offeredMilestones;
+    OfferedMilestones public offeredMilestones;
+    Milestone[] public milestones;
 
     /// @notice Mapping of recipient addresses to their offered milestones.
     mapping(address => OfferedRecipient) public offeredRecipient;
 
     /// @notice Struct holding information about project rejection voting.
     RejectProject projectReject;
-
-    /// @notice Mapping of recipient addresses to their array of milestones.
-    /// @dev Maps 'recipientId' to an array of 'Milestone' structs.
-    mapping(address => Milestone[]) public milestones;
 
     /// @notice Mapping of recipient addresses to the ID of their next upcoming milestone.
     /// @dev Maps 'recipientId' to 'nextMilestone' ID.
@@ -341,91 +337,77 @@ contract BountyStrategy is BaseStrategy, ReentrancyGuard {
     }
 
     /// @notice Offers milestones to a specific recipient.
-    /// @param _recipientId The ID of the recipient to whom the milestones are being offered.
     /// @param _milestones An array of milestones to be offered.
     /// @dev Requires the sender to be wearing the executor hat and to be either the recipient or a member of the recipient's profile.
     /// Emits a MilestonesOffered event upon successful offering of milestones.
-    function offerMilestones(address _recipientId, Milestone[] memory _milestones) external {
+    function offerMilestones(Milestone[] memory _milestones) external {
         if (!_hatsContract.isWearerOfHat(msg.sender, strategyStorage.supplierHat)) {
             revert SUPPLIER_HAT_WEARING_REQUIRED();
         }
 
-        Recipient storage recipient = _recipients[_recipientId];
-
-        // Check if the recipient is accepted, otherwise revert
-        if (recipient.recipientStatus != Status.Accepted) {
-            revert RECIPIENT_NOT_ACCEPTED();
-        }
-
-        // Check if the milestones have already been reviewed and set, and if so, revert
-        if (recipient.milestonesReviewStatus == Status.Accepted) {
+        if (milestones.length > 0) {
             revert MILESTONES_ALREADY_SET();
         }
 
-        _resetOfferedMilestones(_recipientId);
+        _resetOfferedMilestones();
 
         for (uint256 i = 0; i < _milestones.length; i++) {
-            offeredMilestones[_recipientId].milestones.push(_milestones[i]);
+            offeredMilestones.milestones.push(_milestones[i]);
         }
 
         uint256 managerVotingPower = _suplierPower[msg.sender];
 
-        offeredMilestones[_recipientId].suppliersVotes[msg.sender] = managerVotingPower;
+        offeredMilestones.suppliersVotes[msg.sender] = managerVotingPower;
 
-        _reviewOfferedtMilestones(_recipientId, Status.Accepted, managerVotingPower);
+        _reviewOfferedtMilestones(Status.Accepted, managerVotingPower);
 
-        emit MilestonesOffered(_recipientId, _milestones.length);
+        emit MilestonesOffered(_milestones.length);
     }
 
     /// @notice Reviews the offered milestones for a specific recipient and sets their status.
-    /// @param _recipientId The ID of the recipient whose milestones are being reviewed.
     /// @param _status The new status to be set for the offered milestones.
     /// @dev Requires the sender to be the pool manager and wearing the supplier hat.
     /// Emits a MilestonesReviewed event and, depending on the outcome, either OfferedMilestonesAccepted or OfferedMilestonesRejected.
-    function reviewOfferedtMilestones(address _recipientId, Status _status) external onlyPoolManager(msg.sender) {
+    function reviewOfferedtMilestones(Status _status) external onlyPoolManager(msg.sender) {
         if (!_hatsContract.isWearerOfHat(msg.sender, strategyStorage.supplierHat)) {
             revert SUPPLIER_HAT_WEARING_REQUIRED();
         }
 
-        if (offeredMilestones[_recipientId].suppliersVotes[msg.sender] > 0) {
+        if (offeredMilestones.suppliersVotes[msg.sender] > 0) {
             revert ALREADY_REVIEWED();
         }
 
-        Recipient storage recipient = _recipients[_recipientId];
-
-        if (recipient.milestonesReviewStatus == Status.Accepted) {
+        if (milestones.length > 0) {
             revert MILESTONES_ALREADY_SET();
         }
 
         uint256 managerVotingPower = _suplierPower[msg.sender];
 
-        offeredMilestones[_recipientId].suppliersVotes[msg.sender] = managerVotingPower;
+        offeredMilestones.suppliersVotes[msg.sender] = managerVotingPower;
 
-        _reviewOfferedtMilestones(_recipientId, _status, managerVotingPower);
+        _reviewOfferedtMilestones(_status, managerVotingPower);
     }
 
-    function _reviewOfferedtMilestones(address _recipientId, Status _status, uint256 _votingPower) internal {
+    function _reviewOfferedtMilestones(Status _status, uint256 _votingPower) internal {
         uint256 threshold = strategyStorage.totalSupply * strategyStorage.thresholdPercentage / 100;
 
         if (_status == Status.Accepted) {
-            offeredMilestones[_recipientId].votesFor += _votingPower;
+            offeredMilestones.votesFor += _votingPower;
 
-            if (offeredMilestones[_recipientId].votesFor > threshold) {
-                _recipients[_recipientId].milestonesReviewStatus = _status;
-                _setMilestones(_recipientId, offeredMilestones[_recipientId].milestones);
-                emit OfferedMilestonesAccepted(_recipientId);
+            if (offeredMilestones.votesFor > threshold) {
+                _setMilestones(offeredMilestones.milestones);
+                emit OfferedMilestonesAccepted();
             }
         } else if (_status == Status.Rejected) {
-            offeredMilestones[_recipientId].votesAgainst += _votingPower;
+            offeredMilestones.votesAgainst += _votingPower;
 
-            if (offeredMilestones[_recipientId].votesAgainst > threshold) {
-                _recipients[_recipientId].milestonesReviewStatus = _status;
-                _resetOfferedMilestones(_recipientId);
-                emit OfferedMilestonesRejected(_recipientId);
+            if (offeredMilestones.votesAgainst > threshold) {
+                _resetOfferedMilestones();
+                emit OfferedMilestonesRejected();
             }
         }
 
-        emit MilestonesReviewed(_recipientId, _status);
+        emit MilestonesReviewed(_status);
     }
 
     /// @notice Submits a milestone for a specific recipient.
@@ -443,14 +425,12 @@ contract BountyStrategy is BaseStrategy, ReentrancyGuard {
             revert RECIPIENT_NOT_ACCEPTED();
         }
 
-        Milestone[] storage recipientMilestones = milestones[_recipientId];
-
         // Check if the milestone ID is valid
-        if (_milestoneId >= recipientMilestones.length) {
+        if (_milestoneId >= milestones.length) {
             revert INVALID_MILESTONE();
         }
 
-        Milestone storage milestone = recipientMilestones[_milestoneId];
+        Milestone storage milestone = milestones[_milestoneId];
 
         // Ensure that the milestone has not already been accepted
         if (milestone.milestoneStatus == Status.Accepted) {
@@ -513,13 +493,11 @@ contract BountyStrategy is BaseStrategy, ReentrancyGuard {
             revert RECIPIENT_NOT_ACCEPTED();
         }
 
-        Milestone[] storage recipientMilestones = milestones[_recipientId];
-
-        if (_milestoneId >= recipientMilestones.length) {
+        if (_milestoneId >= milestones.length) {
             revert INVALID_MILESTONE();
         }
 
-        Milestone storage milestone = recipientMilestones[_milestoneId];
+        Milestone storage milestone = milestones[_milestoneId];
 
         if (milestone.milestoneStatus != Status.Pending) {
             revert INVALID_MILESTONE_STATUS();
@@ -655,14 +633,13 @@ contract BountyStrategy is BaseStrategy, ReentrancyGuard {
     /// @notice Resets the offered milestones for a specific recipient.
     /// @dev Clears the votes and deletes the offered milestones for the recipient.
     ///      This function is internal and is used when milestones need to be reset.
-    /// @param _recipientId The address ID of the recipient whose milestones are to be reset.
-    function _resetOfferedMilestones(address _recipientId) internal {
+    function _resetOfferedMilestones() internal {
         for (uint256 i = 0; i < _suppliersStore.length; i++) {
-            offeredMilestones[_recipientId].suppliersVotes[_suppliersStore[i]] = 0;
+            offeredMilestones.suppliersVotes[_suppliersStore[i]] = 0;
         }
-        delete offeredMilestones[_recipientId];
+        delete offeredMilestones;
 
-        emit OfferedMilestonesReset(_recipientId);
+        emit OfferedMilestonesReset();
     }
 
     /// @notice Register a recipient to the pool.
@@ -708,8 +685,7 @@ contract BountyStrategy is BaseStrategy, ReentrancyGuard {
             useRegistryAnchor: isUsingRegistryAnchor,
             grantAmount: grantAmount,
             metadata: metadata,
-            recipientStatus: Status.Accepted,
-            milestonesReviewStatus: Status.Pending
+            recipientStatus: Status.Accepted
         });
 
         // Add the recipient to the accepted recipient ids mapping
@@ -783,13 +759,12 @@ contract BountyStrategy is BaseStrategy, ReentrancyGuard {
     /// @param _sender The sender of the distribution
     function _distributeUpcomingMilestone(address _recipientId, address _sender) private {
         uint256 milestoneToBeDistributed = upcomingMilestone[_recipientId];
-        Milestone[] storage recipientMilestones = milestones[_recipientId];
 
         Recipient memory recipient = _recipients[_recipientId];
-        Milestone storage milestone = recipientMilestones[milestoneToBeDistributed];
+        Milestone storage milestone = milestones[milestoneToBeDistributed];
 
         // check if milestone is not rejected or already paid out
-        if (milestoneToBeDistributed > recipientMilestones.length) {
+        if (milestoneToBeDistributed > milestones.length) {
             revert INVALID_MILESTONE();
         }
 
@@ -811,7 +786,7 @@ contract BountyStrategy is BaseStrategy, ReentrancyGuard {
         // Increment the upcoming milestone
         upcomingMilestone[_recipientId]++;
 
-        if (upcomingMilestone[_recipientId] >= recipientMilestones.length) {
+        if (upcomingMilestone[_recipientId] >= milestones.length) {
             strategyStorage.state = StrategyState.Executed;
             _setPoolActive(false);
         }
@@ -845,14 +820,13 @@ contract BountyStrategy is BaseStrategy, ReentrancyGuard {
     }
 
     /// @notice Set the milestones for the recipient.
-    /// @param _recipientId ID of the recipient
     /// @param _milestones The milestones to be set
-    function _setMilestones(address _recipientId, Milestone[] memory _milestones) internal {
+    function _setMilestones(Milestone[] memory _milestones) internal {
         uint256 totalAmountPercentage;
 
         // Clear out the milestones and reset the index to 0
-        if (milestones[_recipientId].length > 0) {
-            delete milestones[_recipientId];
+        if (milestones.length > 0) {
+            delete milestones;
         }
 
         uint256 milestonesLength = _milestones.length;
@@ -871,7 +845,7 @@ contract BountyStrategy is BaseStrategy, ReentrancyGuard {
             totalAmountPercentage += milestone.amountPercentage;
 
             // Add the milestone to the recipient's milestones
-            milestones[_recipientId].push(milestone);
+            milestones.push(milestone);
 
             unchecked {
                 i++;
@@ -882,7 +856,7 @@ contract BountyStrategy is BaseStrategy, ReentrancyGuard {
             revert INVALID_MILESTONES_PERCENTAGE();
         }
 
-        emit MilestonesSet(_recipientId, milestonesLength);
+        emit MilestonesSet(milestonesLength);
     }
 
     function _createAndMintManagerHat(

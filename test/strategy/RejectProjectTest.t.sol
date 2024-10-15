@@ -46,7 +46,7 @@ contract RejectProjectTest is TestSetUpWithProfileId {
 
         vm.startPrank(projectManager1);
 
-        oneManagerStrategy.offerMilestones(projectExecutor, milestones);
+        oneManagerStrategy.offerMilestones(milestones);
         oneManagerStrategy.rejectProject(IStrategy.Status.Accepted);
 
         vm.stopPrank();
@@ -57,7 +57,7 @@ contract RejectProjectTest is TestSetUpWithProfileId {
 
         vm.startPrank(projectManager1);
 
-        oneManagerStrategy.offerMilestones(projectExecutor, milestones);
+        oneManagerStrategy.offerMilestones(milestones);
 
         oneManagerStrategy.submitMilestone(projectExecutor, 0, Metadata({protocol: 1, pointer: "example-pointer"}));
 

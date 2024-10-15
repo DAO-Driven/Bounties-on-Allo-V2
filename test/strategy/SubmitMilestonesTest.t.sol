@@ -28,7 +28,7 @@ contract SubmitMilestonesTest is TestSetUpWithProfileId {
 
         BountyStrategy.Milestone[] memory milestones = getMilestones();
 
-        oneManagerStrategy.offerMilestones(projectExecutor, milestones);
+        oneManagerStrategy.offerMilestones(milestones);
 
         vm.stopPrank();
     }

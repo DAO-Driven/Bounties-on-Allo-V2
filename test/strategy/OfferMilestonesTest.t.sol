@@ -34,7 +34,7 @@ contract ExecutorSupplierVotingStrategy_OfferMilestonesTest is TestSetUpWithProf
         vm.expectRevert(Errors.SUPPLIER_HAT_WEARING_REQUIRED.selector);
 
         vm.prank(unAuthorized);
-        strategyContract.offerMilestones(projectExecutor, milestones);
+        strategyContract.offerMilestones(milestones);
     }
 
     function test_OfferMilestonesByManager() external {
@@ -50,7 +50,7 @@ contract ExecutorSupplierVotingStrategy_OfferMilestonesTest is TestSetUpWithProf
 
         BountyStrategy.Milestone[] memory milestones = getMilestones();
 
-        strategyContract.offerMilestones(projectExecutor, milestones);
+        strategyContract.offerMilestones(milestones);
 
         vm.stopPrank();
     }
@@ -68,10 +68,10 @@ contract ExecutorSupplierVotingStrategy_OfferMilestonesTest is TestSetUpWithProf
 
         BountyStrategy.Milestone[] memory milestones = getMilestones();
 
-        strategyContract.offerMilestones(projectExecutor, milestones);
+        strategyContract.offerMilestones(milestones);
 
         vm.expectRevert(Errors.MILESTONES_ALREADY_SET.selector);
-        strategyContract.offerMilestones(projectExecutor, milestones);
+        strategyContract.offerMilestones(milestones);
 
         vm.stopPrank();
     }
@@ -103,10 +103,10 @@ contract ExecutorSupplierVotingStrategy_OfferMilestonesTest is TestSetUpWithProf
         BountyStrategy.Milestone[] memory milestones = getMilestones();
 
         vm.prank(projectManager1);
-        strategyContract.offerMilestones(projectExecutor, milestones);
+        strategyContract.offerMilestones(milestones);
 
         vm.prank(projectManager2);
-        strategyContract.reviewOfferedtMilestones(projectExecutor, IStrategy.Status.Accepted);
+        strategyContract.reviewOfferedtMilestones(IStrategy.Status.Accepted);
     }
 
     function test_MilestonesResetByMultipleOfferMilestones() external {
@@ -136,13 +136,13 @@ contract ExecutorSupplierVotingStrategy_OfferMilestonesTest is TestSetUpWithProf
         BountyStrategy.Milestone[] memory milestones = getMilestones();
 
         vm.prank(projectManager1);
-        strategyContract.offerMilestones(projectExecutor, milestones);
+        strategyContract.offerMilestones(milestones);
 
         vm.prank(projectManager1);
-        strategyContract.offerMilestones(projectExecutor, milestones);
+        strategyContract.offerMilestones(milestones);
 
         vm.prank(projectManager2);
-        strategyContract.reviewOfferedtMilestones(projectExecutor, IStrategy.Status.Accepted);
+        strategyContract.reviewOfferedtMilestones(IStrategy.Status.Accepted);
     }
 
     function getMilestones() public pure returns (BountyStrategy.Milestone[] memory milestones) {

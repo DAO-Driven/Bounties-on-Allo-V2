@@ -6,6 +6,8 @@ import {BountyStrategy} from "../../src/contracts/BountyStrategy.sol";
 import {IStrategy} from "../../lib/allo-v2/interfaces/IStrategy.sol";
 import {Errors} from "../../lib/allo-v2/libraries/Errors.sol";
 import {TestSetUpWithProfileId} from "../setup/TestSetUpWithProfileId.t.sol";
+import {MilestonesGetter} from "../helpers/GetMilestones.t.sol";
+import {Metadata} from "../../lib/allo-v2/libraries/Metadata.sol";
 
 contract ExecutorSupplierVotingStrategy_RecipientTest is TestSetUpWithProfileId {
     function setUp() public override {
@@ -120,23 +122,46 @@ contract ExecutorSupplierVotingStrategy_RecipientTest is TestSetUpWithProfileId 
         vm.prank(projectManager2);
         strategyContract.reviewRecipient(projectExecutor2, IStrategy.Status.Accepted);
 
-        // vm.expectRevert(Errors.MAX_RECIPIENTS_AMOUNT_REACHED.selector);
         vm.prank(projectManager3);
         strategyContract.reviewRecipient(projectExecutor2, IStrategy.Status.Accepted);
 
         vm.expectRevert(Errors.MAX_RECIPIENTS_AMOUNT_REACHED.selector);
         vm.prank(projectManager3);
         strategyContract.reviewRecipient(projectExecutor, IStrategy.Status.Accepted);
+    }
 
-        // (uint256 votesFor, uint256 votesAgainst) = strategyContract.offeredRecipient(projectExecutor);
-        // console.log(":::::: projectExecutor after (Accepted) review by Managers | votesFor:", votesFor);
-        // console.log(":::::: projectExecutor after (Accepted) review by Managers | votesAgainst:", votesAgainst);
+    function test_ChngeRecipientAndDistributeToCorrectOne() external {
+        vm.startPrank(projectManager2);
 
-        // (uint256 votesFor2, uint256 votesAgainst2) = strategyContract.offeredRecipient(projectExecutor2);
-        // console.log(":::::: projectExecutor2 after (Accepted) review by Managers | votesFor:", votesFor2);
-        // console.log(":::::: projectExecutor2 after (Accepted) review by Managers | votesAgainst:", votesAgainst2);
+        projectToken.approve(address(manager), 100e18);
+        manager.supplyProject(profileId, 1e18);
 
-        // uint256 totalSupply = strategyContract.totalSupply();
-        // console.log(":::::: totalSupply1:", totalSupply);
+        address projectStrategy = manager.getProjectStrategy(profileId);
+        BountyStrategy strategyContract = BountyStrategy(payable(projectStrategy));
+
+        BountyStrategy.Milestone[] memory milestones = new MilestonesGetter().getTwoEqualMilestones();
+
+        strategyContract.offerMilestones(milestones);
+
+        strategyContract.reviewRecipient(projectExecutor, IStrategy.Status.Accepted);
+
+        strategyContract.reviewRecipient(projectExecutor, IStrategy.Status.Rejected);
+
+        strategyContract.reviewRecipient(projectExecutor2, IStrategy.Status.Accepted);
+
+        vm.stopPrank();
+
+        // TODO: finish this logic
+
+        // vm.expectRevert(Errors.RECIPIENT_NOT_ACCEPTED.selector);
+        // vm.prank(projectExecutor);
+        // strategyContract.submitMilestone(projectExecutor, 0, Metadata({protocol: 1, pointer: "example-pointer"}));
+
+        // vm.expectRevert(Errors.RECIPIENT_NOT_ACCEPTED.selector);
+        // vm.prank(projectExecutor2);
+        // strategyContract.submitMilestone(projectExecutor, 0, Metadata({protocol: 1, pointer: "example-pointer"}));
+
+        // vm.prank(projectManager2);
+        // strategyContract.reviewSubmitedMilestone(projectExecutor, 0, IStrategy.Status.Accepted);
     }
 }

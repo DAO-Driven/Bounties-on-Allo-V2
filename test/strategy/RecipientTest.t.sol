@@ -145,23 +145,23 @@ contract ExecutorSupplierVotingStrategy_RecipientTest is TestSetUpWithProfileId 
 
         strategyContract.reviewRecipient(projectExecutor, IStrategy.Status.Accepted);
 
-        strategyContract.reviewRecipient(projectExecutor, IStrategy.Status.Rejected);
+        // strategyContract.reviewRecipient(projectExecutor, IStrategy.Status.Rejected);
 
-        strategyContract.reviewRecipient(projectExecutor2, IStrategy.Status.Accepted);
+        // strategyContract.reviewRecipient(projectExecutor2, IStrategy.Status.Accepted);
 
         vm.stopPrank();
 
         // TODO: finish this logic
 
         // vm.expectRevert(Errors.RECIPIENT_NOT_ACCEPTED.selector);
-        // vm.prank(projectExecutor);
-        // strategyContract.submitMilestone(projectExecutor, 0, Metadata({protocol: 1, pointer: "example-pointer"}));
+        vm.prank(projectExecutor);
+        strategyContract.submitMilestone(projectExecutor, 0, Metadata({protocol: 1, pointer: "example-pointer"}));
 
         // vm.expectRevert(Errors.RECIPIENT_NOT_ACCEPTED.selector);
         // vm.prank(projectExecutor2);
         // strategyContract.submitMilestone(projectExecutor, 0, Metadata({protocol: 1, pointer: "example-pointer"}));
 
-        // vm.prank(projectManager2);
-        // strategyContract.reviewSubmitedMilestone(projectExecutor, 0, IStrategy.Status.Accepted);
+        vm.prank(projectManager2);
+        strategyContract.reviewSubmitedMilestone(projectExecutor, 0, IStrategy.Status.Accepted);
     }
 }
